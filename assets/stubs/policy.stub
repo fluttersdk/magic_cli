@@ -1,0 +1,40 @@
+import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+
+import '../models/{{ snakeName }}.dart';
+
+/// {{ className }}
+///
+/// Defines authorization rules for {{ modelName }} resources.
+class {{ className }} extends Policy {
+  @override
+  void register() {
+    Gate.define('view-{{ snakeName }}', view);
+    Gate.define('create-{{ snakeName }}', create);
+    Gate.define('update-{{ snakeName }}', update);
+    Gate.define('delete-{{ snakeName }}', delete);
+  }
+
+  /// Determine if the user can view the {{ modelName }}.
+  bool view(Model user, {{ modelName }} {{ camelName }}) {
+    // TODO: Implement your authorization logic
+    return true;
+  }
+
+  /// Determine if the user can create a {{ modelName }}.
+  bool create(Model user, {{ modelName }}? {{ camelName }}) {
+    // TODO: Implement your authorization logic
+    return true;
+  }
+
+  /// Determine if the user can update the {{ modelName }}.
+  bool update(Model user, {{ modelName }} {{ camelName }}) {
+    // TODO: Implement your authorization logic
+    return true;
+  }
+
+  /// Determine if the user can delete the {{ modelName }}.
+  bool delete(Model user, {{ modelName }} {{ camelName }}) {
+    // TODO: Implement your authorization logic
+    return true;
+  }
+}

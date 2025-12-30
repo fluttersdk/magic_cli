@@ -1,0 +1,12 @@
+import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+
+/// {{ className }}
+///
+/// Seeds the database with sample data.
+class {{ className }} extends Seeder {
+  @override
+  Future<void> run() async {
+    // Use factories to create data:
+    // await {{ modelName }}Factory().count(50).create();
+  }
+}

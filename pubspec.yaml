@@ -1,0 +1,22 @@
+name: fluttersdk_magic_cli
+description: "A new Flutter project."
+version: 0.0.1
+homepage: https://magic.fluttersdk.com
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  args: ^2.7.0
+  path: ^1.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+executables: 
+  magic: bin/magic.dart

@@ -1,0 +1,48 @@
+import 'package:flutter/material.dart';
+import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+
+// TODO: Import your views and model
+// import '../../resources/views/{{ snakeName }}/index_view.dart';
+// import '../models/{{ snakeName }}.dart';
+
+/// {{ className }} Controller with State Management.
+///
+/// Uses MagicStateMixin for async data and loading states.
+class {{ className }}Controller extends MagicController
+    with MagicStateMixin<List<dynamic>> {
+  /// Singleton accessor with lazy registration.
+  static {{ className }}Controller get instance =>
+      Magic.findOrPut({{ className }}Controller.new);
+
+  // ---------------------------------------------------------------------------
+  // Actions (return Widget from resources/views)
+  // ---------------------------------------------------------------------------
+
+  /// GET /{{ snakeName }} - Display the index view.
+  Widget index() {
+    if (isEmpty) load();
+    // return const {{ className }}IndexView();
+    return const Scaffold(
+      body: Center(child: Text('{{ className }} Index')),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Business Logic
+  // ---------------------------------------------------------------------------
+
+  /// Load data from database/API.
+  Future<void> load() async {
+    loading();
+
+    try {
+      // TODO: Replace with actual data loading
+      // final items = await {{ className }}.all();
+      // success(items);
+      await Future.delayed(const Duration(seconds: 1));
+      success([]);
+    } catch (e) {
+      error('Failed to load: $e');
+    }
+  }
+}

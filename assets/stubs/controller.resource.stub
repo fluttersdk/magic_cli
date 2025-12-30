@@ -1,0 +1,58 @@
+import 'package:flutter/material.dart';
+import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+
+import '../../resources/views/{{ snakeName }}/index_view.dart';
+import '../../resources/views/{{ snakeName }}/show_view.dart';
+import '../../resources/views/{{ snakeName }}/create_view.dart';
+import '../../resources/views/{{ snakeName }}/edit_view.dart';
+
+/// {{ className }} Resource Controller.
+class {{ className }}Controller extends MagicController
+    with MagicStateMixin<List<dynamic>> {
+  /// Singleton accessor with lazy registration.
+  static {{ className }}Controller get instance =>
+      Magic.findOrPut({{ className }}Controller.new);
+
+  // ---------------------------------------------------------------------------
+  // Resource Actions (CRUD)
+  // ---------------------------------------------------------------------------
+
+  /// GET /{{ snakeName }} - Display a listing of items.
+  Widget index() {
+    if (isEmpty) load();
+    return const {{ className }}IndexView();
+  }
+
+  /// GET /{{ snakeName }}/create - Show the form for creating a new item.
+  Widget create() => const {{ className }}CreateView();
+
+  /// GET /{{ snakeName }}/:id - Display the specified item.
+  Widget show(String id) => const {{ className }}ShowView();
+
+  /// GET /{{ snakeName }}/:id/edit - Show the form for editing the item.
+  Widget edit(String id) => const {{ className }}EditView();
+
+  // ---------------------------------------------------------------------------
+  // Business Logic
+  // ---------------------------------------------------------------------------
+
+  /// Load all items.
+  Future<void> load() async {
+    // TODO: Implement
+  }
+
+  /// Store a newly created item.
+  Future<void> store(Map<String, dynamic> data) async {
+    // TODO: Implement
+  }
+
+  /// Update the specified item.
+  Future<void> update(String id, Map<String, dynamic> data) async {
+    // TODO: Implement
+  }
+
+  /// Remove the specified item.
+  Future<void> destroy(String id) async {
+    // TODO: Implement
+  }
+}
