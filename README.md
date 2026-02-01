@@ -282,6 +282,145 @@ lib/
 
 ---
 
+## 🔍 Inspection Commands
+
+Commands for inspecting your project structure.
+
+### `magic route:list`
+
+Lists all registered routes in your application.
+
+```bash
+magic route:list
+```
+
+**Output:**
+```
++---------------------+------------+----------+
+| URI                 | Middleware | File     |
++---------------------+------------+----------+
+| /                   | auth       | app.dart |
+| /auth/login         | -          | web.dart |
+| /dashboard          | auth       | app.dart |
++---------------------+------------+----------+
+```
+
+---
+
+### `magic config:list`
+
+Lists all configuration files and their keys.
+
+```bash
+magic config:list
+magic config:list --verbose  # Show key previews
+```
+
+---
+
+### `magic config:get`
+
+Gets a specific configuration value using dot notation.
+
+```bash
+magic config:get app.name
+magic config:get network.default
+magic config:get app.url -s  # Show source
+```
+
+**Priority:** Project config → `.env` → Framework defaults
+
+---
+
+## 🚀 Magic Boost (AI Integration)
+
+Magic Boost provides AI-powered development tools through MCP (Model Context Protocol).
+
+### Setup
+
+```bash
+# Install Boost in your project
+magic boost:install
+```
+
+This will:
+- Create `.magic/guidelines/` with framework documentation
+- Configure MCP server in your IDE (Cursor, VS Code)
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `magic boost:install` | Setup AI guidelines + MCP config |
+| `magic boost:mcp` | Run the MCP server (stdio) |
+| `magic boost:update` | Refresh guidelines to latest version |
+
+---
+
+### MCP Tools
+
+The MCP server exposes these tools to AI assistants:
+
+| Tool | Description |
+|------|-------------|
+| `app_info` | Get pubspec.yaml info (name, version, dependencies) |
+| `list_routes` | List all application routes |
+| `get_config` | Read config values with dot notation |
+| `validate_wind` | Validate Wind UI utility classes |
+| `search_docs` | Search Magic documentation |
+
+---
+
+### IDE Configuration
+
+After running `boost:install`, your IDE's MCP config (`.cursor/mcp.json` or `.vscode/mcp.json`) will include:
+
+```json
+{
+  "mcpServers": {
+    "magic-boost": {
+      "command": "dart",
+      "args": ["/path/to/magic.dart", "boost:mcp"],
+      "cwd": "/path/to/your/project"
+    }
+  }
+}
+```
+
+**Manual Configuration:**
+
+If auto-detection fails, manually add to your IDE's MCP config:
+
+```json
+{
+  "mcpServers": {
+    "magic-boost": {
+      "command": "dart",
+      "args": ["run", "fluttersdk_magic_cli:magic", "boost:mcp"]
+    }
+  }
+}
+```
+
+---
+
+### Generated Guidelines
+
+After installation, `.magic/guidelines/` contains:
+
+```
+.magic/
+└── guidelines/
+    ├── core.md      # Core Magic framework
+    ├── wind.md      # Wind UI system
+    ├── eloquent.md  # Eloquent models
+    └── routing.md   # Routing system
+```
+
+These files provide context for AI assistants about your project's architecture.
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please read our contributing guidelines.

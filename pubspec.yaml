@@ -12,6 +12,11 @@ dependencies:
     sdk: flutter
   args: ^2.7.0
   path: ^1.9.1
+  # Magic Boost MCP dependencies
+  json_rpc_2: ^3.0.2
+  stream_channel: ^2.1.2
+  http: ^1.2.2
+  yaml: ^3.1.2
 
 dev_dependencies:
   flutter_test:
@@ -20,3 +25,4 @@ dev_dependencies:
 
 executables: 
   magic: bin/magic.dart
+
