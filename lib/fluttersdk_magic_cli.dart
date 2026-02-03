@@ -1,3 +1,6 @@
+// Re-exports for CLI plugins
+export 'package:args/args.dart';
+
 // Console
 export 'src/console/command.dart';
 export 'src/console/kernel.dart';
