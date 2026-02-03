@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// The Make Model Types Command.
 ///

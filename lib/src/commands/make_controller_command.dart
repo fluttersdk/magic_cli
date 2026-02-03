@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
-import 'package:fluttersdk_magic_cli/src/stubs/stub_loader.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// The Make Controller Command.
 ///
@@ -115,7 +114,8 @@ class MakeControllerCommand extends Command {
 
     // Write file
     file.writeAsStringSync(content);
-    info('Created controller: $dirPath/$fileName');
+    newLine();
+    success('Created controller: $dirPath/$fileName');
 
     // If resource, create CRUD views
     if (isResource) {
@@ -154,7 +154,7 @@ class MakeControllerCommand extends Command {
           'snakeName': snakeName,
         });
         file.writeAsStringSync(content);
-        info('Created view: $viewsDir/$fileName');
+        success('Created view: $viewsDir/$fileName');
       } on StubNotFoundException {
         error('Stub not found: view.stateful.stub');
       }

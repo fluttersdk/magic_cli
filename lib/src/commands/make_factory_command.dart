@@ -1,7 +1,6 @@
 import 'dart:io';
 
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
-import 'package:fluttersdk_magic_cli/src/stubs/stub_loader.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// The Make Factory Command.
 ///
@@ -61,7 +60,8 @@ class MakeFactoryCommand extends Command {
 
     // Write file
     file.writeAsStringSync(content);
-    info('Created factory: lib/database/factories/$fileName.dart');
+    newLine();
+    success('Created factory: lib/database/factories/$fileName.dart');
   }
 
   /// Convert PascalCase to snake_case.

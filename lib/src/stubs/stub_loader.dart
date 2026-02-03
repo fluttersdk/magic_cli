@@ -18,10 +18,11 @@ import 'package:path/path.dart' as path;
 class StubLoader {
   /// Load a stub file by name.
   ///
-  /// Searches for `{name}.stub` in the assets/stubs directory.
+  /// Searches for `{name}.stub` in the provided search paths.
+  /// If no search paths provided, uses default CLI stubs directory.
   /// Returns the raw stub content as a string.
-  static Future<String> load(String name) async {
-    final stubPath = _getStubPath(name);
+  static Future<String> load(String name, {List<String>? searchPaths}) async {
+    final stubPath = _findStubPath(name, searchPaths);
     final file = File(stubPath);
 
     if (!file.existsSync()) {
@@ -32,8 +33,8 @@ class StubLoader {
   }
 
   /// Load a stub file synchronously.
-  static String loadSync(String name) {
-    final stubPath = _getStubPath(name);
+  static String loadSync(String name, {List<String>? searchPaths}) {
+    final stubPath = _findStubPath(name, searchPaths);
     final file = File(stubPath);
 
     if (!file.existsSync()) {
@@ -43,22 +44,49 @@ class StubLoader {
     return file.readAsStringSync();
   }
 
-  /// Get the path to a stub file.
+  /// Find the path to a stub file by searching multiple directories.
+  ///
+  /// Searches in order:
+  /// 1. Provided search paths
+  /// 2. Default CLI package stubs directory
+  static String _findStubPath(String name, List<String>? searchPaths) {
+    final paths = searchPaths ?? [];
+
+    // Add default path as fallback
+    paths.add(_getDefaultStubPath());
+
+    for (final searchPath in paths) {
+      final stubPath = path.join(searchPath, '$name.stub');
+      if (File(stubPath).existsSync()) {
+        return stubPath;
+      }
+    }
+
+    // Return the default path even if not found (for error message)
+    return path.join(_getDefaultStubPath(), '$name.stub');
+  }
+
+  /// Get the default stub path.
   ///
   /// Resolves the path relative to the CLI package location.
-  static String _getStubPath(String name) {
+  static String _getDefaultStubPath() {
     // Get the directory where this script is running from
     final scriptPath = Platform.script.toFilePath();
     final scriptDir = path.dirname(scriptPath);
 
     // Go up to the package root and find assets/stubs
     final packageRoot = path.dirname(scriptDir); // bin -> package root
-    return path.join(packageRoot, 'assets', 'stubs', '$name.stub');
+    return path.join(packageRoot, 'assets', 'stubs');
   }
 
   /// Check if a stub file exists.
-  static bool exists(String name) {
-    return File(_getStubPath(name)).existsSync();
+  static bool exists(String name, {List<String>? searchPaths}) {
+    try {
+      final stubPath = _findStubPath(name, searchPaths);
+      return File(stubPath).existsSync();
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Replace placeholders in a stub with provided values.
@@ -79,15 +107,78 @@ class StubLoader {
 
   /// Load and replace in one step.
   static Future<String> make(
-      String name, Map<String, String> replacements) async {
-    final stub = await load(name);
+    String name,
+    Map<String, String> replacements, {
+    List<String>? searchPaths,
+  }) async {
+    final stub = await load(name, searchPaths: searchPaths);
     return replace(stub, replacements);
   }
 
   /// Load and replace synchronously.
-  static String makeSync(String name, Map<String, String> replacements) {
-    final stub = loadSync(name);
+  static String makeSync(
+    String name,
+    Map<String, String> replacements, {
+    List<String>? searchPaths,
+  }) {
+    final stub = loadSync(name, searchPaths: searchPaths);
     return replace(stub, replacements);
+  }
+
+  // Case transformation utilities
+
+  /// Convert snake_case to PascalCase.
+  ///
+  /// Example: 'user_profile' -> 'UserProfile'
+  static String toPascalCase(String input) {
+    if (input.isEmpty) return input;
+    return input
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join('');
+  }
+
+  /// Convert PascalCase to snake_case.
+  ///
+  /// Example: 'UserProfile' -> 'user_profile'
+  static String toSnakeCase(String input) {
+    if (input.isEmpty) return input;
+    final buffer = StringBuffer();
+    for (var i = 0; i < input.length; i++) {
+      final char = input[i];
+      if (i > 0 && char.toUpperCase() == char && char.toLowerCase() != char) {
+        buffer.write('_');
+      }
+      buffer.write(char.toLowerCase());
+    }
+    return buffer.toString();
+  }
+
+  /// Convert PascalCase to kebab-case.
+  ///
+  /// Example: 'UserProfile' -> 'user-profile'
+  static String toKebabCase(String input) {
+    return toSnakeCase(input).replaceAll('_', '-');
+  }
+
+  /// Convert snake_case to camelCase.
+  ///
+  /// Example: 'user_profile' -> 'userProfile'
+  static String toCamelCase(String input) {
+    if (input.isEmpty) return input;
+    final parts = input.split('_');
+    if (parts.isEmpty) return input;
+
+    final buffer = StringBuffer(parts[0]);
+    for (var i = 1; i < parts.length; i++) {
+      if (parts[i].isNotEmpty) {
+        buffer.write(parts[i][0].toUpperCase());
+        if (parts[i].length > 1) {
+          buffer.write(parts[i].substring(1));
+        }
+      }
+    }
+    return buffer.toString();
   }
 }
 

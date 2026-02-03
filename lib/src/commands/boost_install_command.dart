@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:args/args.dart';
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 import 'package:fluttersdk_magic_cli/src/boost/guideline_generator.dart';
 
 /// The Boost Install Command.

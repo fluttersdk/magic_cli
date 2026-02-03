@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
-import 'package:fluttersdk_magic_cli/src/stubs/stub_loader.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// The Make View Command.
 ///
@@ -112,7 +111,8 @@ class MakeViewCommand extends Command {
 
     // Write file
     file.writeAsStringSync(content);
-    info('Created view: $dirPath/$fileName');
+    newLine();
+    success('Created view: $dirPath/$fileName');
   }
 
   /// Convert PascalCase to snake_case.

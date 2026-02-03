@@ -1,7 +1,6 @@
 import 'dart:io';
 
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
-import 'package:fluttersdk_magic_cli/src/stubs/stub_loader.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// The Make Seeder Command.
 ///
@@ -60,7 +59,8 @@ class MakeSeederCommand extends Command {
 
     // Write file
     file.writeAsStringSync(content);
-    info('Created seeder: lib/database/seeders/$fileName.dart');
+    newLine();
+    success('Created seeder: lib/database/seeders/$fileName.dart');
   }
 
   /// Convert PascalCase to snake_case.

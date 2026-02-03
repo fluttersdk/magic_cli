@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// Make Lang Command.
 ///
@@ -52,7 +52,8 @@ class MakeLangCommand extends Command {
     // Create the translation file
     final content = _generateContent();
     file.writeAsStringSync(content);
-    info('Created translation file: ${file.path}');
+    newLine();
+    success('Created translation file: ${file.path}');
 
     // Add asset to pubspec.yaml
     await _addToPubspec(locale);

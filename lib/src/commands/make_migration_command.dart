@@ -1,7 +1,6 @@
 import 'dart:io';
 
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
-import 'package:fluttersdk_magic_cli/src/stubs/stub_loader.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// The Make Migration Command.
 ///
@@ -85,7 +84,8 @@ class MakeMigrationCommand extends Command {
     final file = File('${dir.path}/$fileName');
     file.writeAsStringSync(content);
 
-    info('Created migration: lib/database/migrations/$fileName');
+    newLine();
+    success('Created migration: lib/database/migrations/$fileName');
   }
 
   /// Convert PascalCase or camelCase to snake_case.

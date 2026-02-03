@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
-import 'package:fluttersdk_magic_cli/src/stubs/stub_loader.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// The Make Model Command.
 ///
@@ -118,7 +117,8 @@ class MakeModelCommand extends Command {
 
     // Write file
     file.writeAsStringSync(content);
-    info('Created model: lib/app/models/$fileName');
+    newLine();
+    success('Created model: lib/app/models/$fileName');
 
     // Check for --all flag first
     final createAll = arguments['all'] as bool? ?? false;
@@ -201,7 +201,8 @@ class MakeModelCommand extends Command {
     // Write migration file
     final file = File('${dir.path}/$fileName');
     file.writeAsStringSync(content);
-    info('Created migration: lib/database/migrations/$fileName');
+    newLine();
+    success('Created migration: lib/database/migrations/$fileName');
   }
 
   /// Create a seeder for the model.
@@ -233,7 +234,8 @@ class MakeModelCommand extends Command {
     // Write seeder file
     final file = File('${dir.path}/$fileName.dart');
     file.writeAsStringSync(content);
-    info('Created seeder: lib/database/seeders/$fileName.dart');
+    newLine();
+    success('Created seeder: lib/database/seeders/$fileName.dart');
   }
 
   /// Create a factory for the model.
@@ -267,7 +269,8 @@ class MakeModelCommand extends Command {
     // Write factory file
     final file = File('${dir.path}/$fileName.dart');
     file.writeAsStringSync(content);
-    info('Created factory: lib/database/factories/$fileName.dart');
+    newLine();
+    success('Created factory: lib/database/factories/$fileName.dart');
   }
 
   /// Create a policy for the model.
@@ -308,7 +311,8 @@ class MakeModelCommand extends Command {
 
     // Write policy file
     file.writeAsStringSync(content);
-    info('Created policy: lib/app/policies/$fileName');
+    newLine();
+    success('Created policy: lib/app/policies/$fileName');
   }
 
   /// Create a controller for the model.
@@ -353,7 +357,8 @@ class MakeModelCommand extends Command {
 
     // Write controller file
     file.writeAsStringSync(content);
-    info('Created controller: lib/app/controllers/$fileName');
+    newLine();
+    success('Created controller: lib/app/controllers/$fileName');
 
     // If resource, also create CRUD views
     if (isResource) {
@@ -392,7 +397,7 @@ class MakeModelCommand extends Command {
           'snakeName': snakeName,
         });
         file.writeAsStringSync(content);
-        info('Created view: $viewsDir/$fileName');
+        success('Created view: $viewsDir/$fileName');
       } on StubNotFoundException {
         error('Stub not found: view.stateful.stub');
       }

@@ -421,6 +421,204 @@ These files provide context for AI assistants about your project's architecture.
 
 ---
 
+## 🔌 Plugin Integration
+
+### Using Magic CLI Base in Your Plugin
+
+Magic CLI provides reusable infrastructure that plugins can extend:
+
+```yaml
+# pubspec.yaml in your plugin
+dependencies:
+  fluttersdk_magic_cli:
+    path: ../fluttersdk_magic/plugins/fluttersdk_magic_cli
+```
+
+### Creating Custom Commands
+
+```dart
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
+
+class MyCommand extends Command {
+  @override
+  String get name => 'my:command';
+
+  @override
+  String get description => 'My custom command';
+
+  @override
+  void configure(ArgParser parser) {
+    parser.addFlag('verbose', abbr: 'v');
+  }
+
+  @override
+  Future<void> handle() async {
+    // Use ConsoleStyle for output
+    success('Operation completed!');
+    info('Processing data...');
+    warn('This is a warning');
+    error('Something went wrong');
+
+    // Interactive prompts
+    final name = ask('What is your name?', defaultValue: 'User');
+    final confirmed = confirm('Continue?', defaultValue: true);
+
+    // Display tables
+    table(['Name', 'Status'], [
+      ['User', 'Active'],
+      ['Admin', 'Inactive'],
+    ]);
+
+    // File operations
+    if (FileHelper.fileExists('pubspec.yaml')) {
+      final yaml = FileHelper.readYamlFile('pubspec.yaml');
+      info('Project: ${yaml['name']}');
+    }
+
+    // Config editing
+    ConfigEditor.addDependencyToPubspec(
+      pubspecPath: 'pubspec.yaml',
+      name: 'my_package',
+      version: '^1.0.0',
+    );
+  }
+}
+```
+
+### Available Helpers
+
+#### ConsoleStyle
+```dart
+// Output methods
+ConsoleStyle.success('Success message');  // ✓ with green
+ConsoleStyle.error('Error message');      // ✗ with red
+ConsoleStyle.info('Info message');        // ℹ with blue
+ConsoleStyle.warning('Warning');          // ⚠ with yellow
+ConsoleStyle.comment('Comment');          // Dimmed text
+
+// Formatting
+ConsoleStyle.header('Section Title');
+ConsoleStyle.banner('Magic CLI', '1.0.0');
+ConsoleStyle.line(char: '─', length: 50);
+ConsoleStyle.keyValue('Name', 'Value');
+
+// Tables
+ConsoleStyle.table(['Header1', 'Header2'], [
+  ['Row1Col1', 'Row1Col2'],
+  ['Row2Col1', 'Row2Col2'],
+]);
+```
+
+#### FileHelper
+```dart
+// File operations
+FileHelper.fileExists('/path/to/file');
+FileHelper.readFile('/path/to/file');
+FileHelper.writeFile('/path/to/file', 'content');
+FileHelper.copyFile(source, destination);
+FileHelper.deleteFile('/path/to/file');
+
+// Directory operations
+FileHelper.directoryExists('/path');
+FileHelper.ensureDirectoryExists('/path');
+
+// YAML operations
+final data = FileHelper.readYamlFile('config.yaml');
+FileHelper.writeYamlFile('output.yaml', data);
+
+// Project utilities
+final root = FileHelper.findProjectRoot();
+final relative = FileHelper.getRelativePath(from, to);
+```
+
+#### ConfigEditor
+```dart
+// Pubspec.yaml editing
+ConfigEditor.addDependencyToPubspec(
+  pubspecPath: 'pubspec.yaml',
+  name: 'package_name',
+  version: '^1.0.0',
+);
+
+ConfigEditor.removeDependencyFromPubspec(
+  pubspecPath: 'pubspec.yaml',
+  name: 'old_package',
+);
+
+ConfigEditor.updatePubspecValue(
+  pubspecPath: 'pubspec.yaml',
+  keyPath: ['environment', 'sdk'],
+  value: '>=3.4.0 <4.0.0',
+);
+
+// Dart file editing
+ConfigEditor.addImportToFile(
+  filePath: 'lib/main.dart',
+  importStatement: "import 'config/app.dart';",
+);
+
+ConfigEditor.insertCodeBeforePattern(
+  filePath: 'lib/main.dart',
+  pattern: RegExp(r'runApp\('),
+  code: '  initializeApp();\n  ',
+);
+
+// Config file creation
+ConfigEditor.createConfigFile(
+  path: 'lib/config/my_config.dart',
+  content: 'final config = {...};',
+);
+```
+
+#### StubLoader
+```dart
+// Load templates
+final stub = await StubLoader.load('template_name');
+final content = StubLoader.replace(stub, {
+  'className': 'User',
+  'tableName': 'users',
+});
+
+// Or in one step
+final result = await StubLoader.make('template_name', {
+  'className': 'MyClass',
+  'methodName': 'myMethod',
+});
+
+// Case transformers
+StubLoader.toPascalCase('user_profile');  // UserProfile
+StubLoader.toSnakeCase('UserProfile');    // user_profile
+StubLoader.toKebabCase('UserProfile');    // user-profile
+StubLoader.toCamelCase('user_profile');   // userProfile
+
+// Custom search paths
+StubLoader.loadSync('my_stub',
+  searchPaths: ['/custom/path/to/stubs']);
+```
+
+### Stub Template Syntax
+
+Create `.stub` files in your plugin's `assets/stubs/` directory:
+
+```dart
+// controller.stub
+import 'package:flutter/material.dart';
+
+class {{ className }}Controller {
+  final String name = '{{ snakeName }}';
+
+  Widget build() {
+    return Container(
+      child: Text('{{ className }}'),
+    );
+  }
+}
+```
+
+Placeholders use `{{ variableName }}` syntax with flexible whitespace.
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please read our contributing guidelines.

@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
-import 'package:fluttersdk_magic_cli/src/stubs/stub_loader.dart';
+import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
 
 /// The Make Policy Command.
 ///
@@ -87,7 +86,8 @@ class MakePolicyCommand extends Command {
 
     // Write file
     file.writeAsStringSync(content);
-    info('Created policy: lib/app/policies/$fileName.dart');
+    newLine();
+    success('Created policy: lib/app/policies/$fileName.dart');
   }
 
   /// Convert PascalCase to snake_case.
