@@ -1,5 +1,6 @@
 # Magic CLI ⚡
 
+[![CI](https://github.com/fluttersdk/magic_cli/actions/workflows/ci.yml/badge.svg)](https://github.com/fluttersdk/magic_cli/actions/workflows/ci.yml)
 [![Dart Version](https://img.shields.io/badge/Dart-3.4.0%2B-blue.svg)](https://dart.dev)
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.22.0%2B-blue.svg)](https://flutter.dev)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
