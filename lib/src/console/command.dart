@@ -144,7 +144,7 @@ abstract class Command {
     }
 
     if (defaultIndex != null) {
-      stdout.write('Select [${defaultIndex}]: ');
+      stdout.write('Select [$defaultIndex]: ');
     } else {
       stdout.write('Select: ');
     }

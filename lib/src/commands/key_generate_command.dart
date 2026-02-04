@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
+import 'package:magic_cli/magic_cli.dart';
 
 /// Generate a new application key for the Flutter Magic app.
 ///

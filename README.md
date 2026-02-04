@@ -11,7 +11,7 @@
 ## 🚀 Installation
 
 ```bash
-dart pub global activate fluttersdk_magic_cli
+dart pub global activate magic_cli
 ```
 
 Ensure `~/.pub-cache/bin` is in your PATH.
@@ -396,7 +396,7 @@ If auto-detection fails, manually add to your IDE's MCP config:
   "mcpServers": {
     "magic-boost": {
       "command": "dart",
-      "args": ["run", "fluttersdk_magic_cli:magic", "boost:mcp"]
+      "args": ["run", "magic_cli:magic", "boost:mcp"]
     }
   }
 }
@@ -430,14 +430,14 @@ Magic CLI provides reusable infrastructure that plugins can extend:
 ```yaml
 # pubspec.yaml in your plugin
 dependencies:
-  fluttersdk_magic_cli:
-    path: ../fluttersdk_magic/plugins/fluttersdk_magic_cli
+  magic_cli:
+    path: ../magic/plugins/magic_cli
 ```
 
 ### Creating Custom Commands
 
 ```dart
-import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
+import 'package:magic_cli/magic_cli.dart';
 
 class MyCommand extends Command {
   @override

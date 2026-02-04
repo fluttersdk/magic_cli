@@ -1,20 +1,20 @@
-import 'package:fluttersdk_magic_cli/src/console/kernel.dart';
-import 'package:fluttersdk_magic_cli/src/commands/key_generate_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_migration_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_model_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_lang_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_seeder_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_factory_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_model_types_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_view_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_controller_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/make_policy_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/route_list_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/config_list_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/config_get_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/boost_install_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/boost_mcp_command.dart';
-import 'package:fluttersdk_magic_cli/src/commands/boost_update_command.dart';
+import 'package:magic_cli/src/console/kernel.dart';
+import 'package:magic_cli/src/commands/key_generate_command.dart';
+import 'package:magic_cli/src/commands/make_migration_command.dart';
+import 'package:magic_cli/src/commands/make_model_command.dart';
+import 'package:magic_cli/src/commands/make_lang_command.dart';
+import 'package:magic_cli/src/commands/make_seeder_command.dart';
+import 'package:magic_cli/src/commands/make_factory_command.dart';
+import 'package:magic_cli/src/commands/make_model_types_command.dart';
+import 'package:magic_cli/src/commands/make_view_command.dart';
+import 'package:magic_cli/src/commands/make_controller_command.dart';
+import 'package:magic_cli/src/commands/make_policy_command.dart';
+import 'package:magic_cli/src/commands/route_list_command.dart';
+import 'package:magic_cli/src/commands/config_list_command.dart';
+import 'package:magic_cli/src/commands/config_get_command.dart';
+import 'package:magic_cli/src/commands/boost_install_command.dart';
+import 'package:magic_cli/src/commands/boost_mcp_command.dart';
+import 'package:magic_cli/src/commands/boost_update_command.dart';
 
 void main(List<String> arguments) async {
   final kernel = Kernel();

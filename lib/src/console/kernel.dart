@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:args/args.dart';
-import 'package:fluttersdk_magic_cli/src/console/command.dart';
+import 'package:magic_cli/src/console/command.dart';
 
 class Kernel {
   final Map<String, Command> _commands = {};

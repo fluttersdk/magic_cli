@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
+import 'package:magic_cli/magic_cli.dart';
 
 /// The Make Factory Command.
 ///

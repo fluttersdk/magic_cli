@@ -49,7 +49,7 @@ for PHP developers building mobile applications.
 
 ## Usage
 ```dart
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 // Access services via facades
 await Auth.login(credentials, user);

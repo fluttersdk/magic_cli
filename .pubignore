@@ -1,0 +1,13 @@
+# Environment files
+.env
+
+# Documentation (keep README.md only)
+REFACTORING_COMPLETE.md
+
+# Old library file (renamed to magic_cli.dart)
+lib/fluttersdk_magic_cli.dart
+
+# Development
+.vscode/
+.idea/
+*.iml

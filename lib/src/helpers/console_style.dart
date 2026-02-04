@@ -144,7 +144,7 @@ class ConsoleStyle {
 
     // Separator
     for (var i = 0; i < headers.length; i++) {
-      buffer.write('${'─' * (columnWidths[i] + 2)}');
+      buffer.write('─' * (columnWidths[i] + 2));
     }
     buffer.writeln();
 
@@ -152,7 +152,7 @@ class ConsoleStyle {
     for (final row in rows) {
       for (var i = 0; i < headers.length; i++) {
         final value = i < row.length ? row[i] : '';
-        buffer.write('${value.padRight(columnWidths[i] + 2)}');
+        buffer.write(value.padRight(columnWidths[i] + 2));
       }
       buffer.writeln();
     }

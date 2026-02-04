@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
+import 'package:magic_cli/magic_cli.dart';
 import 'package:path/path.dart' as path;
 
 void main() {
@@ -184,7 +184,8 @@ dependencies:
         final projectRoot = path.join(tempDir.path, 'project');
         final subDir = path.join(projectRoot, 'lib', 'src');
         Directory(subDir).createSync(recursive: true);
-        File(path.join(projectRoot, 'pubspec.yaml')).writeAsStringSync('name: test');
+        File(path.join(projectRoot, 'pubspec.yaml'))
+            .writeAsStringSync('name: test');
 
         final foundRoot = FileHelper.findProjectRoot(startFrom: subDir);
         expect(foundRoot, equals(projectRoot));

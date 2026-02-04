@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
+import 'package:magic_cli/magic_cli.dart';
 import 'package:path/path.dart' as path;
 
 /// Integration tests for CLI base functionality
@@ -49,8 +49,8 @@ void main() {
         final stubPath = path.join(customStubDir, 'custom.stub');
         File(stubPath).writeAsStringSync('Hello {{ name }}!');
 
-        final content = StubLoader.loadSync('custom',
-          searchPaths: [customStubDir]);
+        final content =
+            StubLoader.loadSync('custom', searchPaths: [customStubDir]);
 
         expect(content, equals('Hello {{ name }}!'));
       });
@@ -64,8 +64,7 @@ void main() {
         File(path.join(dir1, 'test.stub')).writeAsStringSync('From dir1');
         File(path.join(dir2, 'test.stub')).writeAsStringSync('From dir2');
 
-        final content = StubLoader.loadSync('test',
-          searchPaths: [dir1, dir2]);
+        final content = StubLoader.loadSync('test', searchPaths: [dir1, dir2]);
 
         expect(content, equals('From dir1'));
       });

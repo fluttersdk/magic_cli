@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
-import 'package:args/args.dart';
+import 'package:magic_cli/magic_cli.dart';
 
 // Test command implementation
 class TestCommand extends Command {
@@ -27,7 +26,10 @@ class TestCommand extends Command {
     newLine();
 
     // Test table
-    table(['Name', 'Status'], [
+    table([
+      'Name',
+      'Status'
+    ], [
       ['User', 'Active'],
     ]);
 
@@ -89,7 +91,12 @@ void main() {
 
       test('table() formats data as table', () {
         expect(
-          () => command.table(['H1', 'H2'], [['V1', 'V2']]),
+          () => command.table([
+            'H1',
+            'H2'
+          ], [
+            ['V1', 'V2']
+          ]),
           returnsNormally,
         );
       });

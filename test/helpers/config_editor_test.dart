@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
+import 'package:magic_cli/magic_cli.dart';
 import 'package:path/path.dart' as path;
 
 void main() {
@@ -212,8 +212,9 @@ void main() {}
         );
 
         final content = File(dartFile).readAsStringSync();
-        final importCount =
-            RegExp(r"import 'package:http/http\.dart';").allMatches(content).length;
+        final importCount = RegExp(r"import 'package:http/http\.dart';")
+            .allMatches(content)
+            .length;
         expect(importCount, equals(1));
       });
 

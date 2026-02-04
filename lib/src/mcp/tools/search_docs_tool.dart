@@ -67,9 +67,10 @@ class SearchDocsTool extends McpTool {
       );
 
       if (response.statusCode != 200) {
-        print(response.body);
-        print(response.statusCode);
-        print(response.request?.url);
+        // Debug information commented out for production
+        // print(response.body);
+        // print(response.statusCode);
+        // print(response.request?.url);
 
         return 'Error: Documentation API returned ${response.statusCode}\n${response.body}';
       }

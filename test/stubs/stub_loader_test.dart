@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fluttersdk_magic_cli/fluttersdk_magic_cli.dart';
+import 'package:magic_cli/magic_cli.dart';
 import 'package:path/path.dart' as path;
 
 void main() {
@@ -25,7 +25,8 @@ void main() {
         final stubPath = path.join(tempStubsDir, 'test.stub');
         File(stubPath).writeAsStringSync('class {{ className }} {}');
 
-        final content = await StubLoader.load('test', searchPaths: [tempStubsDir]);
+        final content =
+            await StubLoader.load('test', searchPaths: [tempStubsDir]);
         expect(content, equals('class {{ className }} {}'));
       });
 
@@ -33,13 +34,15 @@ void main() {
         final stubPath = path.join(tempStubsDir, 'test.stub');
         File(stubPath).writeAsStringSync('class {{ className }} {}');
 
-        final content = StubLoader.loadSync('test', searchPaths: [tempStubsDir]);
+        final content =
+            StubLoader.loadSync('test', searchPaths: [tempStubsDir]);
         expect(content, equals('class {{ className }} {}'));
       });
 
       test('load() throws StubNotFoundException when stub not found', () {
         expect(
-          () async => await StubLoader.load('nonexistent', searchPaths: [tempStubsDir]),
+          () async =>
+              await StubLoader.load('nonexistent', searchPaths: [tempStubsDir]),
           throwsA(isA<StubNotFoundException>()),
         );
       });
@@ -48,11 +51,13 @@ void main() {
         final stubPath = path.join(tempStubsDir, 'exists.stub');
         File(stubPath).writeAsStringSync('content');
 
-        expect(StubLoader.exists('exists', searchPaths: [tempStubsDir]), isTrue);
+        expect(
+            StubLoader.exists('exists', searchPaths: [tempStubsDir]), isTrue);
       });
 
       test('exists() returns false for non-existent stub', () {
-        expect(StubLoader.exists('nonexistent', searchPaths: [tempStubsDir]), isFalse);
+        expect(StubLoader.exists('nonexistent', searchPaths: [tempStubsDir]),
+            isFalse);
       });
     });
 
@@ -100,7 +105,8 @@ void main() {
     group('Case Transformers', () {
       test('toPascalCase() converts snake_case to PascalCase', () {
         expect(StubLoader.toPascalCase('user_profile'), equals('UserProfile'));
-        expect(StubLoader.toPascalCase('api_controller'), equals('ApiController'));
+        expect(
+            StubLoader.toPascalCase('api_controller'), equals('ApiController'));
       });
 
       test('toPascalCase() handles single word', () {
@@ -109,7 +115,8 @@ void main() {
 
       test('toSnakeCase() converts PascalCase to snake_case', () {
         expect(StubLoader.toSnakeCase('UserProfile'), equals('user_profile'));
-        expect(StubLoader.toSnakeCase('APIController'), equals('a_p_i_controller'));
+        expect(StubLoader.toSnakeCase('APIController'),
+            equals('a_p_i_controller'));
       });
 
       test('toSnakeCase() handles single word', () {
@@ -118,12 +125,14 @@ void main() {
 
       test('toKebabCase() converts PascalCase to kebab-case', () {
         expect(StubLoader.toKebabCase('UserProfile'), equals('user-profile'));
-        expect(StubLoader.toKebabCase('APIController'), equals('a-p-i-controller'));
+        expect(StubLoader.toKebabCase('APIController'),
+            equals('a-p-i-controller'));
       });
 
       test('toCamelCase() converts snake_case to camelCase', () {
         expect(StubLoader.toCamelCase('user_profile'), equals('userProfile'));
-        expect(StubLoader.toCamelCase('api_controller'), equals('apiController'));
+        expect(
+            StubLoader.toCamelCase('api_controller'), equals('apiController'));
       });
     });
 
