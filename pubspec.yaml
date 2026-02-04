@@ -1,7 +1,9 @@
 name: fluttersdk_magic_cli
-description: "A new Flutter project."
-version: 0.0.1
+description: "Command-line tools for Magic Framework. Scaffolding, code generation, and project management."
+version: 0.0.1-alpha.1
 homepage: https://magic.fluttersdk.com
+repository: https://github.com/fluttersdk/magic_cli
+issue_tracker: https://github.com/fluttersdk/magic_cli/issues
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -24,6 +26,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
 
-executables: 
-  magic: bin/magic.dart
+executables:
+  magic: magic
 
