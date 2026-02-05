@@ -1,3 +1,11 @@
+## 0.0.1-alpha.2
+
+* CI/CD improvements - GitHub Actions integration
+* Fixed dependency constraints for flutter_test compatibility
+* Updated linter rules for CI environment
+* Added CI status badge to README
+* All 118 tests passing with automated testing
+
 ## 0.0.1-alpha.1
 
 * Initial alpha release
