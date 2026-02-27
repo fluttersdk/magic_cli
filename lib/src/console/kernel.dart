@@ -24,7 +24,7 @@ class Kernel {
 
   /// Process raw arguments and dispatch to appropriate command.
   Future<void> handle(List<String> args) async {
-    if (args.isEmpty || args.contains('--help') || args.contains('-h')) {
+    if (args.isEmpty || args[0] == '--help' || args[0] == '-h') {
       _printHelp();
       return;
     }
