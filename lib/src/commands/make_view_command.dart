@@ -1,148 +1,125 @@
-import 'dart:io';
+import 'package:args/args.dart';
+import 'package:magic_cli/src/console/generator_command.dart';
+import 'package:magic_cli/src/console/string_helper.dart';
+import 'package:magic_cli/src/helpers/file_helper.dart';
+import 'package:magic_cli/src/stubs/view_stubs.dart';
 
-import 'package:magic_cli/magic_cli.dart';
-
-/// The Make View Command.
+/// The `magic make:view` generator command.
 ///
-/// Scaffolds a new Magic view file using `.stub` templates.
+/// Scaffolds a new MagicView class using the view stub templates.
 ///
 /// ## Usage
 ///
 /// ```bash
-/// magic make:view Dashboard                    # Stateless view
-/// magic make:view Auth/Login --stateful       # Stateful in subfolder
-/// magic make:view Dashboard --responsive      # Responsive view
+/// magic make:view Login              # → lib/resources/views/login_view.dart
+/// magic make:view Auth/Register      # → lib/resources/views/auth/register_view.dart
+/// magic make:view Dashboard --stateful  # → Stateful view with lifecycle hooks
 /// ```
 ///
-/// ## Output
-///
-/// Creates a file in `lib/resources/views/` with nested folder support.
-class MakeViewCommand extends Command {
-  @override
-  String get name => 'make:view';
+/// The `View` suffix is appended automatically when omitted.
+class MakeViewCommand extends GeneratorCommand {
+    /// Optional test root override — enables isolation in unit tests.
+    final String? _testRoot;
 
-  @override
-  String get description => 'Create a new Magic view class';
+    /// Creates a [MakeViewCommand].
+    ///
+    /// [testRoot] overrides the project root resolution, used in tests only.
+    MakeViewCommand({String? testRoot}) : _testRoot = testRoot;
 
-  @override
-  void configure(ArgParser parser) {
-    parser.addFlag(
-      'stateful',
-      negatable: false,
-      help: 'Create a stateful view with lifecycle hooks',
-    );
-    parser.addFlag(
-      'responsive',
-      abbr: 'r',
-      negatable: false,
-      help: 'Create a responsive view with mobile/tablet/desktop layouts',
-    );
-  }
+    @override
+    String get name => 'make:view';
 
-  @override
-  Future<void> handle() async {
-    if (arguments.rest.isEmpty) {
-      error('Please provide a view name.');
-      error('Usage: magic make:view <Path/Name> [--stateful] [--responsive]');
-      return;
+    @override
+    String get description => 'Create a new view class';
+
+    @override
+    String getDefaultNamespace() => 'lib/resources/views';
+
+    @override
+    String getProjectRoot() => _testRoot ?? super.getProjectRoot();
+
+    @override
+    void configure(ArgParser parser) {
+        // 1. Register --force (and base args) from parent first.
+        super.configure(parser);
+
+        // 2. Add view-specific flags.
+        parser.addFlag(
+            'stateful',
+            help: 'Generate a stateful view with lifecycle hooks',
+            negatable: false,
+        );
     }
 
-    final input = arguments.rest.first;
+    @override
+    String getStub() =>
+        hasOption('stateful') ? viewStatefulStub : viewStub;
 
-    // Parse path and view name (e.g., "Auth/Register" -> folder: "auth", name: "Register")
-    final parts = input.split('/');
-    final rawName = parts.last;
-    // Strip 'View' suffix case-insensitively if present
-    final viewName = rawName.toLowerCase().endsWith('view')
-        ? rawName.substring(0, rawName.length - 4)
-        : rawName;
-    final folderPath = parts.length > 1
-        ? parts.sublist(0, parts.length - 1).map(_toSnakeCase).join('/')
-        : '';
-
-    // Validate view name (must be PascalCase starting with letter)
-    if (!RegExp(r'^[A-Z][a-zA-Z0-9]*$').hasMatch(viewName)) {
-      error('View name must be PascalCase (e.g., Dashboard, UserProfile).');
-      return;
+    /// Provides extra placeholder replacements for the view stub.
+    ///
+    /// [name] is the BASE name without the `View` suffix
+    /// (e.g., `Login`, `Auth/Register`).
+    @override
+    Map<String, String> getReplacements(String name) {
+        final parsed = StringHelper.parseName(name);
+        return {
+            '{{ snakeName }}': StringHelper.toSnakeCase(parsed.className),
+        };
     }
 
-    final snakeName = _toSnakeCase(viewName);
-    final fileName = '${snakeName}_view.dart';
+    @override
+    Future<void> handle() async {
+        final rawName = argument(0);
+        if (rawName == null || rawName.isEmpty) {
+            error('Not enough arguments (missing: "name").');
+            return;
+        }
 
-    // Build full directory path
-    final basePath = 'lib/resources/views';
-    final dirPath = folderPath.isEmpty ? basePath : '$basePath/$folderPath';
+        // 1. Derive base name (no View suffix) and full name (with suffix).
+        final baseName = _stripSuffix(rawName, 'View');
+        final fullName = _withSuffix(rawName, 'View');
 
-    // Create views directory if it doesn't exist
-    final dir = Directory(dirPath);
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-      comment('Created directory: $dirPath/');
+        // 2. Resolve output path using the FULL name so filename is correct
+        //    (e.g., LoginView → login_view.dart).
+        final filePath = getPath(fullName);
+
+        // 3. Abort if file exists and --force was not provided.
+        if (FileHelper.fileExists(filePath) && !hasOption('force')) {
+            error('File already exists at $filePath');
+            return;
+        }
+
+        // 4. Build stub content using the BASE name so {{ className }} resolves
+        //    correctly — the stub appends "View" to the placeholder itself.
+        final content = buildClass(baseName);
+        FileHelper.writeFile(filePath, content);
+
+        success('Created: $filePath');
     }
 
-    // Check if file already exists
-    final file = File('${dir.path}/$fileName');
-    if (file.existsSync()) {
-      error('View already exists: $dirPath/$fileName');
-      return;
+    // -------------------------------------------------------------------------
+    // Internals
+    // -------------------------------------------------------------------------
+
+    /// Returns [name] with [suffix] appended to the last path segment if absent.
+    ///
+    /// Handles nested paths: `Auth/Register` → `Auth/RegisterView`.
+    String _withSuffix(String name, String suffix) {
+        final parts = name.split('/');
+        final last = parts.last;
+        final normalisedLast = last.endsWith(suffix) ? last : '$last$suffix';
+        return [...parts.sublist(0, parts.length - 1), normalisedLast].join('/');
     }
 
-    // Determine stub type
-    final isStateful = arguments['stateful'] as bool? ?? false;
-    final isResponsive = arguments['responsive'] as bool? ?? false;
-
-    String stubName;
-    if (isResponsive) {
-      stubName = 'view.responsive';
-    } else if (isStateful) {
-      stubName = 'view.stateful';
-    } else {
-      stubName = 'view';
+    /// Returns [name] with [suffix] removed from the last path segment if present.
+    ///
+    /// Handles nested paths: `Auth/RegisterView` → `Auth/Register`.
+    String _stripSuffix(String name, String suffix) {
+        final parts = name.split('/');
+        final last = parts.last;
+        final strippedLast = last.endsWith(suffix)
+            ? last.substring(0, last.length - suffix.length)
+            : last;
+        return [...parts.sublist(0, parts.length - 1), strippedLast].join('/');
     }
-
-    // Generate file content using stub
-    final content = _generateFromStub(viewName, snakeName, stubName);
-
-    if (content.isEmpty) {
-      error('Failed to generate view content.');
-      return;
-    }
-
-    // Write file
-    file.writeAsStringSync(content);
-    newLine();
-    success('Created view: $dirPath/$fileName');
-  }
-
-  /// Convert PascalCase to snake_case.
-  String _toSnakeCase(String input) {
-    final result = StringBuffer();
-    for (var i = 0; i < input.length; i++) {
-      final char = input[i];
-      if (i > 0 && char.toUpperCase() == char && char.toLowerCase() != char) {
-        result.write('_');
-      }
-      result.write(char.toLowerCase());
-    }
-    return result.toString();
-  }
-
-  /// Generate view content from stub file.
-  String _generateFromStub(
-    String className,
-    String snakeName,
-    String stubName,
-  ) {
-    final replacements = <String, String>{
-      'className': className,
-      'snakeName': snakeName,
-    };
-
-    try {
-      return StubLoader.makeSync(stubName, replacements);
-    } on StubNotFoundException catch (e) {
-      error('Error: ${e.toString()}');
-      return '';
-    }
-  }
 }

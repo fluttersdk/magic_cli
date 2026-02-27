@@ -1,194 +1,131 @@
-import 'dart:io';
+import 'package:args/args.dart';
+import 'package:magic_cli/src/console/generator_command.dart';
+import 'package:magic_cli/src/console/string_helper.dart';
+import 'package:magic_cli/src/helpers/file_helper.dart';
+import 'package:magic_cli/src/stubs/controller_stubs.dart';
 
-import 'package:magic_cli/magic_cli.dart';
-
-/// The Make Controller Command.
+/// The `magic make:controller` generator command.
 ///
-/// Scaffolds a new Magic controller file using `.stub` templates.
+/// Scaffolds a new MagicController class using the controller stub templates.
 ///
 /// ## Usage
 ///
 /// ```bash
-/// magic make:controller User                   # Basic controller
-/// magic make:controller Todo --stateful       # With MagicStateMixin
-/// magic make:controller Product --resource    # CRUD with views
-/// magic make:controller Admin/Dashboard       # Nested folder
+/// magic make:controller Monitor            # → lib/app/controllers/monitor_controller.dart
+/// magic make:controller Admin/Dashboard    # → lib/app/controllers/admin/dashboard_controller.dart
+/// magic make:controller Monitor --resource # → Resource controller with CRUD methods
 /// ```
 ///
-/// ## Output
-///
-/// Creates a file in `lib/app/controllers/` with nested folder support.
-class MakeControllerCommand extends Command {
-  @override
-  String get name => 'make:controller';
+/// The `Controller` suffix is appended automatically when omitted.
+class MakeControllerCommand extends GeneratorCommand {
+    /// Optional test root override — enables isolation in unit tests.
+    final String? _testRoot;
 
-  @override
-  String get description => 'Create a new Magic controller class';
+    /// Creates a [MakeControllerCommand].
+    ///
+    /// [testRoot] overrides the project root resolution, used in tests only.
+    MakeControllerCommand({String? testRoot}) : _testRoot = testRoot;
 
-  @override
-  void configure(ArgParser parser) {
-    parser.addFlag(
-      'stateful',
-      abbr: 's',
-      negatable: false,
-      help: 'Create a controller with MagicStateMixin for state management',
-    );
-    parser.addFlag(
-      'resource',
-      abbr: 'r',
-      negatable: false,
-      help: 'Create a resource controller with CRUD actions and views',
-    );
-  }
+    @override
+    String get name => 'make:controller';
 
-  @override
-  Future<void> handle() async {
-    if (arguments.rest.isEmpty) {
-      error('Please provide a controller name.');
-      error(
-          'Usage: magic make:controller <Path/Name> [--stateful] [--resource]');
-      return;
+    @override
+    String get description => 'Create a new controller class';
+
+    @override
+    String getDefaultNamespace() => 'lib/app/controllers';
+
+    @override
+    String getProjectRoot() => _testRoot ?? super.getProjectRoot();
+
+    @override
+    void configure(ArgParser parser) {
+        // 1. Register --force (and base args) from parent first.
+        super.configure(parser);
+
+        // 2. Add controller-specific flags.
+        parser.addFlag(
+            'resource',
+            abbr: 'r',
+            help: 'Generate a resource controller with CRUD methods',
+            negatable: false,
+        );
+        parser.addOption(
+            'model',
+            abbr: 'm',
+            help: 'The model the controller applies to',
+        );
     }
 
-    final input = arguments.rest.first;
+    @override
+    String getStub() =>
+        hasOption('resource') ? controllerResourceStub : controllerStub;
 
-    // Parse path and controller name
-    final parts = input.split('/');
-    final rawName = parts.last;
-    // Strip 'Controller' suffix case-insensitively if present
-    final controllerName = rawName.toLowerCase().endsWith('controller')
-        ? rawName.substring(0, rawName.length - 10)
-        : rawName;
-    final folderPath = parts.length > 1
-        ? parts.sublist(0, parts.length - 1).map(_toSnakeCase).join('/')
-        : '';
-
-    // Validate controller name
-    if (!RegExp(r'^[A-Z][a-zA-Z0-9]*$').hasMatch(controllerName)) {
-      error('Controller name must be PascalCase (e.g., User, Dashboard).');
-      return;
+    /// Provides extra placeholder replacements for the controller stub.
+    ///
+    /// [name] is the BASE name without the `Controller` suffix
+    /// (e.g., `Monitor`, `Admin/Dashboard`).
+    @override
+    Map<String, String> getReplacements(String name) {
+        final parsed = StringHelper.parseName(name);
+        return {
+            '{{ snakeName }}': StringHelper.toSnakeCase(parsed.className),
+        };
     }
 
-    final snakeName = _toSnakeCase(controllerName);
-    final fileName = '${snakeName}_controller.dart';
+    @override
+    Future<void> handle() async {
+        final rawName = argument(0);
+        if (rawName == null || rawName.isEmpty) {
+            error('Not enough arguments (missing: "name").');
+            return;
+        }
 
-    // Build full directory path
-    final basePath = 'lib/app/controllers';
-    final dirPath = folderPath.isEmpty ? basePath : '$basePath/$folderPath';
+        // 1. Derive base name (no Controller suffix) and full name (with suffix).
+        final baseName = _stripSuffix(rawName, 'Controller');
+        final fullName = _withSuffix(rawName, 'Controller');
 
-    // Create controllers directory
-    final dir = Directory(dirPath);
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-      comment('Created directory: $dirPath/');
+        // 2. Resolve output path using the FULL name so filename is correct
+        //    (e.g., MonitorController → monitor_controller.dart).
+        final filePath = getPath(fullName);
+
+        // 3. Abort if file exists and --force was not provided.
+        if (FileHelper.fileExists(filePath) && !hasOption('force')) {
+            error('File already exists at $filePath');
+            return;
+        }
+
+        // 4. Build stub content using the BASE name so {{ className }} resolves
+        //    correctly — the stub appends "Controller" to the placeholder itself.
+        final content = buildClass(baseName);
+        FileHelper.writeFile(filePath, content);
+
+        success('Created: $filePath');
     }
 
-    // Check if file already exists
-    final file = File('${dir.path}/$fileName');
-    if (file.existsSync()) {
-      error('Controller already exists: $dirPath/$fileName');
-      return;
+    // -------------------------------------------------------------------------
+    // Internals
+    // -------------------------------------------------------------------------
+
+    /// Returns [name] with [suffix] appended to the last path segment if absent.
+    ///
+    /// Handles nested paths: `Admin/Dashboard` → `Admin/DashboardController`.
+    String _withSuffix(String name, String suffix) {
+        final parts = name.split('/');
+        final last = parts.last;
+        final normalisedLast = last.endsWith(suffix) ? last : '$last$suffix';
+        return [...parts.sublist(0, parts.length - 1), normalisedLast].join('/');
     }
 
-    // Determine stub type
-    final isStateful = arguments['stateful'] as bool? ?? false;
-    final isResource = arguments['resource'] as bool? ?? false;
-
-    String stubName;
-    if (isResource) {
-      stubName = 'controller.resource';
-    } else if (isStateful) {
-      stubName = 'controller.stateful';
-    } else {
-      stubName = 'controller';
+    /// Returns [name] with [suffix] removed from the last path segment if present.
+    ///
+    /// Handles nested paths: `Admin/DashboardController` → `Admin/Dashboard`.
+    String _stripSuffix(String name, String suffix) {
+        final parts = name.split('/');
+        final last = parts.last;
+        final strippedLast = last.endsWith(suffix)
+            ? last.substring(0, last.length - suffix.length)
+            : last;
+        return [...parts.sublist(0, parts.length - 1), strippedLast].join('/');
     }
-
-    // Generate file content
-    final content = _generateFromStub(controllerName, snakeName, stubName);
-
-    if (content.isEmpty) {
-      error('Failed to generate controller content.');
-      return;
-    }
-
-    // Write file
-    file.writeAsStringSync(content);
-    newLine();
-    success('Created controller: $dirPath/$fileName');
-
-    // If resource, create CRUD views
-    if (isResource) {
-      await _createResourceViews(controllerName, snakeName);
-    }
-  }
-
-  /// Create resource CRUD views using stateful stub pattern.
-  Future<void> _createResourceViews(String className, String snakeName) async {
-    final viewTypes = ['index', 'show', 'create', 'edit'];
-    final viewsDir = 'lib/resources/views/$snakeName';
-
-    // Create views directory
-    final dir = Directory(viewsDir);
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-      comment('Created directory: $viewsDir/');
-    }
-
-    for (final viewType in viewTypes) {
-      final fileName = '${viewType}_view.dart';
-      final file = File('$viewsDir/$fileName');
-
-      if (file.existsSync()) {
-        comment('View already exists: $viewsDir/$fileName');
-        continue;
-      }
-
-      // Use view.stateful stub with proper class name (e.g., ProductTypeIndex)
-      final viewClassName =
-          '$className${viewType[0].toUpperCase()}${viewType.substring(1)}';
-      try {
-        final content = StubLoader.makeSync('view.stateful', {
-          'className': viewClassName,
-          'modelName': className,
-          'snakeName': snakeName,
-        });
-        file.writeAsStringSync(content);
-        success('Created view: $viewsDir/$fileName');
-      } on StubNotFoundException {
-        error('Stub not found: view.stateful.stub');
-      }
-    }
-  }
-
-  /// Convert PascalCase to snake_case.
-  String _toSnakeCase(String input) {
-    final result = StringBuffer();
-    for (var i = 0; i < input.length; i++) {
-      final char = input[i];
-      if (i > 0 && char.toUpperCase() == char && char.toLowerCase() != char) {
-        result.write('_');
-      }
-      result.write(char.toLowerCase());
-    }
-    return result.toString();
-  }
-
-  /// Generate controller content from stub file.
-  String _generateFromStub(
-    String className,
-    String snakeName,
-    String stubName,
-  ) {
-    final replacements = <String, String>{
-      'className': className,
-      'snakeName': snakeName,
-    };
-
-    try {
-      return StubLoader.makeSync(stubName, replacements);
-    } on StubNotFoundException catch (e) {
-      error('Error: ${e.toString()}');
-      return '';
-    }
-  }
 }
