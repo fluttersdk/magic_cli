@@ -224,7 +224,16 @@ class InstallCommand extends Command {
       importStatement: "import 'config/app.dart';",
     );
 
-    // 3. Insert Magic.init call before runApp(). The two-space indent matches
+    // 3. Make main() async so await Magic.init() is valid.
+    final updatedContent = FileHelper.readFile(mainPath);
+    if (updatedContent.contains('void main()')) {
+      FileHelper.writeFile(
+        mainPath,
+        updatedContent.replaceFirst('void main()', 'Future<void> main()'),
+      );
+    }
+
+    // 4. Insert Magic.init call before runApp(). The two-space indent matches
     //    the typical Flutter main() body indentation.
     ConfigEditor.insertCodeBeforePattern(
       filePath: mainPath,
