@@ -1,150 +1,48 @@
-import 'dart:io';
-
-import 'package:magic_cli/magic_cli.dart';
+import 'package:magic_cli/src/console/generator_command.dart';
+import 'package:magic_cli/src/stubs/lang_stubs.dart';
 
 /// Make Lang Command.
 ///
-/// Scaffolds a new translation JSON file and updates pubspec.yaml.
+/// Scaffolds a new JSON translation file using the [langStub] template.
+/// Generates a `.json` file (not `.dart`) at `assets/lang/{code}.json`.
 ///
 /// ## Usage
 ///
 /// ```bash
-/// magic make:lang fr
 /// magic make:lang tr
+/// magic make:lang en
 /// ```
-class MakeLangCommand extends Command {
+///
+/// ## Output
+///
+/// Creates `assets/lang/{code}.json` containing `{}` — an empty translation map
+/// ready to populate.
+class MakeLangCommand extends GeneratorCommand {
   @override
   String get name => 'make:lang';
 
   @override
-  String get description => 'Create a new translation file';
+  String get description => 'Create a new language file';
 
   @override
-  Future<void> handle() async {
-    if (arguments.rest.isEmpty) {
-      error('Please provide a locale code (e.g., make:lang fr)');
-      return;
-    }
+  String getDefaultNamespace() => 'assets/lang';
 
-    final locale = arguments.rest.first.toLowerCase();
+  @override
+  String getStub() => langStub;
 
-    // Validate locale format
-    if (!RegExp(r'^[a-z]{2}$').hasMatch(locale)) {
-      error('Invalid locale format. Use 2-letter code (e.g., en, fr, tr)');
-      return;
-    }
+  /// Overrides to produce a `.json` path instead of the default `.dart`.
+  ///
+  /// The [name] is a language code (e.g., `tr`, `en`). The file is placed
+  /// directly inside [getDefaultNamespace()] — no nested path support needed.
+  @override
+  String getPath(String name) {
+    final projectRoot = getProjectRoot();
+    final namespace = getDefaultNamespace();
 
-    final directory = Directory('assets/lang');
-    final file = File('${directory.path}/$locale.json');
-
-    // Create directory if needed
-    if (!directory.existsSync()) {
-      directory.createSync(recursive: true);
-      comment('Created assets/lang/ directory');
-    }
-
-    // Check if file exists
-    if (file.existsSync()) {
-      comment('Translation file already exists: ${file.path}');
-      return;
-    }
-
-    // Create the translation file
-    final content = _generateContent();
-    file.writeAsStringSync(content);
-    newLine();
-    success('Created translation file: ${file.path}');
-
-    // Add asset to pubspec.yaml
-    await _addToPubspec(locale);
+    return '$projectRoot/$namespace/$name.json';
   }
 
-  /// Add the language asset to pubspec.yaml.
-  Future<void> _addToPubspec(String locale) async {
-    final pubspecFile = File('pubspec.yaml');
-
-    if (!pubspecFile.existsSync()) {
-      comment('pubspec.yaml not found, skipping asset registration');
-      return;
-    }
-
-    final content = pubspecFile.readAsStringSync();
-    final assetLine = '    - assets/lang/$locale.json';
-
-    // Check if already registered
-    if (content.contains('assets/lang/$locale.json')) {
-      comment('Asset already registered in pubspec.yaml');
-      return;
-    }
-
-    // Find the assets section and add the new asset
-    final lines = content.split('\n');
-    final newLines = <String>[];
-    var foundAssets = false;
-    var addedAsset = false;
-    var assetsIndent = '';
-
-    for (var i = 0; i < lines.length; i++) {
-      final line = lines[i];
-      newLines.add(line);
-
-      // Detect assets: section under flutter:
-      if (line.trim() == 'assets:') {
-        foundAssets = true;
-        // Get the indentation of existing assets
-        assetsIndent = line.substring(0, line.indexOf('assets:'));
-        continue;
-      }
-
-      // If we found assets and this line is an asset entry, track last position
-      if (foundAssets && !addedAsset) {
-        // Check if this line is an asset entry (starts with -)
-        if (line.trim().startsWith('- ') && line.contains('assets/')) {
-          // Check if next line is not an asset entry (end of assets section)
-          if (i + 1 >= lines.length ||
-              !lines[i + 1].trim().startsWith('- ') ||
-              !lines[i + 1].contains('assets/')) {
-            // Add our new asset after this one
-            newLines.add('$assetsIndent  $assetLine'.replaceFirst('    ', ''));
-            addedAsset = true;
-            info('Registered asset in pubspec.yaml');
-          }
-        }
-        // If we hit a non-asset line after finding assets section
-        else if (!line.trim().startsWith('- ') &&
-            !line.trim().startsWith('#') &&
-            line.trim().isNotEmpty) {
-          foundAssets = false;
-        }
-      }
-    }
-
-    // If we couldn't add the asset automatically
-    if (!addedAsset) {
-      comment('Could not auto-add to pubspec.yaml. Please add manually:');
-      comment('  assets:');
-      comment('    - assets/lang/$locale.json');
-      return;
-    }
-
-    // Write the updated pubspec.yaml
-    pubspecFile.writeAsStringSync(newLines.join('\n'));
-  }
-
-  /// Generate the initial JSON content.
-  String _generateContent() {
-    return '''
-{
-  "welcome": "Welcome, :name!",
-  "auth": {
-    "failed": "Authentication failed.",
-    "throttle": "Too many attempts. Please try again in :seconds seconds."
-  },
-  "validation": {
-    "required": "The :attribute field is required.",
-    "email": "The :attribute must be a valid email address."
-  }
-}
-''';
-  }
+  /// No placeholder replacements — the lang stub is already valid JSON (`{}`).
+  @override
+  Map<String, String> getReplacements(String name) => {};
 }
