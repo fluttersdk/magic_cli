@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:args/args.dart';
 import 'package:magic_cli/src/commands/key_generate_command.dart';
-import 'package:magic_cli/src/console/command.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

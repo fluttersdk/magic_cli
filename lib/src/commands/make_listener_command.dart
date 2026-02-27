@@ -54,7 +54,7 @@ class MakeListenerCommand extends GeneratorCommand {
   @override
   Map<String, String> getReplacements(String name) {
     final parsed = StringHelper.parseName(name);
-    final eventClass = option('event') ?? 'MagicEvent';
+    final eventClass = option('event') as String? ?? 'MagicEvent';
 
     // 1. Derive snake_case version of the event class for the import path.
     final eventSnakeName = StringHelper.toSnakeCase(eventClass);

@@ -38,15 +38,19 @@ class Kernel {
     final command = _commands[commandName];
 
     if (command == null) {
-      stderr.writeln(ConsoleStyle.error('Command "$commandName" is not defined.'));
+      stderr.writeln(
+          ConsoleStyle.error('Command "$commandName" is not defined.'));
       _printHelp();
       exitCode = 1;
       return;
     }
 
     final parser = ArgParser();
-    parser.addFlag('help', abbr: 'h', help: 'Display help for the given command', negatable: false);
-    
+    parser.addFlag('help',
+        abbr: 'h',
+        help: 'Display help for the given command',
+        negatable: false);
+
     // Let command configure its options
     command.configure(parser);
 
@@ -55,12 +59,12 @@ class Kernel {
 
     try {
       final results = parser.parse(commandArgs);
-      
+
       if (results.wasParsed('help')) {
         _printCommandHelp(command, parser);
         return;
       }
-      
+
       command.arguments = results;
       await command.handle();
     } on FormatException catch (e) {
@@ -68,7 +72,8 @@ class Kernel {
       _printCommandHelp(command, parser);
       exitCode = 1;
     } catch (e) {
-      stderr.writeln(ConsoleStyle.error('An error occurred while executing the command:'));
+      stderr.writeln(
+          ConsoleStyle.error('An error occurred while executing the command:'));
       stderr.writeln(e);
       exitCode = 1;
     }
@@ -78,14 +83,15 @@ class Kernel {
     stdout.writeln(ConsoleStyle.info('Description:'));
     stdout.writeln('  ${command.description}');
     stdout.writeln('');
-    
+
     stdout.writeln(ConsoleStyle.info('Usage:'));
     stdout.writeln('  magic ${command.name} [options] [arguments]');
     stdout.writeln('');
-    
+
     if (parser.options.isNotEmpty) {
       stdout.writeln(ConsoleStyle.info('Options:'));
-      stdout.writeln(parser.usage.replaceAll(RegExp(r'^', multiLine: true), '  '));
+      stdout.writeln(
+          parser.usage.replaceAll(RegExp(r'^', multiLine: true), '  '));
     }
   }
 
@@ -123,11 +129,12 @@ class Kernel {
 
     // Print namespaced commands grouped
     final sortedNamespaces = namespaces.keys.toList()..sort();
-    
+
     for (final ns in sortedNamespaces) {
       stdout.writeln(' ${ConsoleStyle.yellow}$ns${ConsoleStyle.reset}');
-      
-      final nsCommands = namespaces[ns]!..sort((a, b) => a.name.compareTo(b.name));
+
+      final nsCommands = namespaces[ns]!
+        ..sort((a, b) => a.name.compareTo(b.name));
       for (final cmd in nsCommands) {
         _printCommandRow(cmd.name, cmd.description);
       }
@@ -136,6 +143,7 @@ class Kernel {
 
   void _printCommandRow(String name, String description) {
     final paddedName = name.padRight(20);
-    stdout.writeln('  ${ConsoleStyle.green}$paddedName${ConsoleStyle.reset} $description');
+    stdout.writeln(
+        '  ${ConsoleStyle.green}$paddedName${ConsoleStyle.reset} $description');
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic_cli/src/console/command.dart';
 import 'package:args/args.dart';
-import 'dart:io';
 
 class TestCommand extends Command {
   @override

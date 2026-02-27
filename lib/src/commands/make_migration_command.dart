@@ -96,8 +96,11 @@ class MakeMigrationCommand extends GeneratorCommand {
     final fullName = '${timestamp}_$snakeName';
 
     // Derive table name: --create > --table > snake_name without verb wrapper.
-    final tableName = option('create') ??
-        option('table') ??
+    final tableName = (option('create') ??
+            option('table') ??
+            StringHelper.toSnakeCase(StringHelper.parseName(name).className))
+        as String;
+    option('table') ??
         StringHelper.toSnakeCase(StringHelper.parseName(name).className);
 
     // Build PascalCase class name from the full timestamp+name.

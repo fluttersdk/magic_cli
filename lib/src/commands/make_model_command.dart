@@ -1,4 +1,3 @@
-
 import 'package:args/args.dart';
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
@@ -61,7 +60,7 @@ class MakeModelCommand extends GeneratorCommand {
     );
     parser.addFlag(
       'factory',
-      
+      abbr: 'f',
       help: 'Create a new factory for the model',
       negatable: false,
     );
@@ -80,7 +79,8 @@ class MakeModelCommand extends GeneratorCommand {
     parser.addFlag(
       'all',
       abbr: 'a',
-      help: 'Generate a migration, seeder, factory, policy, and resource controller for the model',
+      help:
+          'Generate a migration, seeder, factory, policy, and resource controller for the model',
       negatable: false,
     );
   }
@@ -92,7 +92,8 @@ class MakeModelCommand extends GeneratorCommand {
   Map<String, String> getReplacements(String name) {
     final parsed = StringHelper.parseName(name);
     final className = parsed.className;
-    final tableName = StringHelper.toPlural(StringHelper.toSnakeCase(className));
+    final tableName =
+        StringHelper.toPlural(StringHelper.toSnakeCase(className));
 
     return {
       '{{ className }}': className,
@@ -129,9 +130,11 @@ class MakeModelCommand extends GeneratorCommand {
 
     // 3. Generate Migration
     if (doAll || hasOption('migration')) {
-      final tableName = StringHelper.toPlural(StringHelper.toSnakeCase(className));
+      final tableName =
+          StringHelper.toPlural(StringHelper.toSnakeCase(className));
       final migCmd = MakeMigrationCommand(testRoot: _testRoot);
-      await migCmd.runWith(['create_${tableName}_table', '--create=$tableName']);
+      await migCmd
+          .runWith(['create_${tableName}_table', '--create=$tableName']);
     }
 
     // 4. Generate Factory

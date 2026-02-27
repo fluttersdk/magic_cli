@@ -61,7 +61,7 @@ void main() {
   group('ConsoleStyle.success()', () {
     test('wraps message with green checkmark and reset', () {
       final result = ConsoleStyle.success('Done');
-      expect(result, equals('${green}✓$reset Done'));
+      expect(result, equals('$green✓$reset Done'));
     });
 
     test('preserves the message content verbatim', () {
@@ -82,7 +82,7 @@ void main() {
   group('ConsoleStyle.error()', () {
     test('wraps message with red X and reset', () {
       final result = ConsoleStyle.error('Failed');
-      expect(result, equals('${red}✗$reset Failed'));
+      expect(result, equals('$red✗$reset Failed'));
     });
 
     test('preserves the message content verbatim', () {
@@ -114,7 +114,7 @@ void main() {
   group('ConsoleStyle.warning()', () {
     test('wraps message with yellow warning symbol and reset', () {
       final result = ConsoleStyle.warning('Danger');
-      expect(result, equals('${yellow}⚠$reset Danger'));
+      expect(result, equals('$yellow⚠$reset Danger'));
     });
 
     test('preserves message content', () {
@@ -150,7 +150,7 @@ void main() {
   group('ConsoleStyle.step()', () {
     test('formats step counter as [current/total] description', () {
       final result = ConsoleStyle.step(3, 5, 'Installing packages');
-      expect(result, equals('${cyan}[3/5]$reset Installing packages'));
+      expect(result, equals('$cyan[3/5]$reset Installing packages'));
     });
 
     test('preserves description text', () {

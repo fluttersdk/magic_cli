@@ -65,7 +65,11 @@ class MakeSeederCommand extends GeneratorCommand {
     // [name] is already normalised (Seeder-suffixed) at this point.
     final parsed = StringHelper.parseName(name);
     final snakeName = StringHelper.toSnakeCase(parsed.className);
+    final modelName = parsed.className.replaceAll('Seeder', '');
 
-    return {'{{ snakeName }}': snakeName};
+    return {
+      '{{ snakeName }}': snakeName,
+      '{{ modelName }}': modelName,
+    };
   }
 }

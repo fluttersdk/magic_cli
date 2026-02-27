@@ -33,7 +33,6 @@ class InstallCommand extends Command {
   @override
   String get description => 'Initialize Magic in a Flutter project';
 
-
   /// Return the Flutter project root directory.
   ///
   /// Overridable in tests to point at a temp directory.

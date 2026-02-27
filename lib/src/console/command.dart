@@ -31,25 +31,28 @@ abstract class Command {
 
   // IO helpers (delegate to ConsoleStyle):
   void info(String message) => stdout.writeln(ConsoleStyle.info(message));
-  
+
   void success(String message) => stdout.writeln(ConsoleStyle.success(message));
-  
+
   void warn(String message) => stdout.writeln(ConsoleStyle.warning(message));
-  
+
   void error(String message) => stderr.writeln(ConsoleStyle.error(message));
-  
-  void line({String char = '-', int length = 60}) => stdout.writeln(ConsoleStyle.line(char: char, length: length));
-  
+
+  void line({String char = '-', int length = 60}) =>
+      stdout.writeln(ConsoleStyle.line(char: char, length: length));
+
   void newLine() => stdout.writeln(ConsoleStyle.newLine());
-  
+
   void comment(String message) => stdout.writeln(ConsoleStyle.comment(message));
-  
-  void table(List<String> headers, List<List<String>> rows) => stdout.writeln(ConsoleStyle.table(headers, rows));
-  
-  void keyValue(String key, String value, {int keyWidth = 20}) => stdout.writeln(ConsoleStyle.keyValue(key, value, keyWidth: keyWidth));
+
+  void table(List<String> headers, List<List<String>> rows) =>
+      stdout.writeln(ConsoleStyle.table(headers, rows));
+
+  void keyValue(String key, String value, {int keyWidth = 20}) =>
+      stdout.writeln(ConsoleStyle.keyValue(key, value, keyWidth: keyWidth));
 
   // Arg helpers (populated after parse):
-  
+
   /// Get option value
   dynamic option(String name) {
     if (!arguments.options.contains(name)) {
@@ -72,7 +75,7 @@ abstract class Command {
   }
 
   // Input helpers (for interactive prompts):
-  
+
   String? ask(String question, {String? defaultValue}) {
     if (defaultValue != null) {
       stdout.write('$question [$defaultValue]: ');

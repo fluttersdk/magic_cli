@@ -20,12 +20,13 @@ abstract class GeneratorCommand extends Command {
     final parsed = StringHelper.parseName(name);
     final namespace = getDefaultNamespace();
     final projectRoot = getProjectRoot();
-    
+
     if (parsed.directory.isEmpty) {
       return path.join(projectRoot, namespace, '${parsed.fileName}.dart');
     }
-    
-    return path.join(projectRoot, namespace, parsed.directory, '${parsed.fileName}.dart');
+
+    return path.join(
+        projectRoot, namespace, parsed.directory, '${parsed.fileName}.dart');
   }
 
   /// Load stub, replace all placeholders, return final content
@@ -33,12 +34,12 @@ abstract class GeneratorCommand extends Command {
     String stub = getStub();
     stub = replaceNamespace(stub, name);
     stub = replaceClass(stub, name);
-    
+
     final replacements = getReplacements(name);
     for (final entry in replacements.entries) {
       stub = stub.replaceAll(entry.key, entry.value);
     }
-    
+
     return stub;
   }
 
@@ -46,11 +47,10 @@ abstract class GeneratorCommand extends Command {
   String replaceNamespace(String stub, String name) {
     final parsed = StringHelper.parseName(name);
     final defaultNs = getDefaultNamespace();
-    
-    final namespace = parsed.directory.isEmpty 
-        ? defaultNs 
-        : '$defaultNs/${parsed.directory}';
-        
+
+    final namespace =
+        parsed.directory.isEmpty ? defaultNs : '$defaultNs/${parsed.directory}';
+
     return stub.replaceAll('{{ namespace }}', namespace);
   }
 
@@ -66,7 +66,11 @@ abstract class GeneratorCommand extends Command {
   @override
   void configure(ArgParser parser) {
     super.configure(parser);
-    parser.addFlag('force', abbr: 'f', help: 'Overwrite the file if it exists', negatable: false);
+    parser.addFlag(
+      'force',
+      help: 'Overwrite the file if it exists',
+      negatable: false,
+    );
   }
 
   @override
@@ -86,7 +90,7 @@ abstract class GeneratorCommand extends Command {
 
     final content = buildClass(name);
     FileHelper.writeFile(filePath, content);
-    
+
     success('Created: $filePath');
   }
 }
