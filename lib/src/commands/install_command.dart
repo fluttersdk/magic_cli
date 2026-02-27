@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:args/args.dart';
 import 'package:path/path.dart' as path;
 
@@ -35,8 +33,6 @@ class InstallCommand extends Command {
   @override
   String get description => 'Initialize Magic in a Flutter project';
 
-  /// Injected project root for testing; null means use filesystem detection.
-  String? _testRoot;
 
   /// Return the Flutter project root directory.
   ///
