@@ -23,6 +23,10 @@ import 'package:path/path.dart' as path;
 /// Creates a file named `m_YYYYMMDDHHMMSS_{name}.dart` in
 /// `lib/database/migrations/`.
 class MakeMigrationCommand extends GeneratorCommand {
+  final String? _testRoot;
+  MakeMigrationCommand({String? testRoot}) : _testRoot = testRoot;
+  @override
+  String getProjectRoot() => _testRoot ?? super.getProjectRoot();
   @override
   String get name => 'make:migration';
 

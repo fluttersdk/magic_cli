@@ -14,6 +14,10 @@ import 'package:magic_cli/src/stubs/seeder_stubs.dart';
 /// magic make:seeder UserSeeder   # Same result — no double-suffix
 /// ```
 class MakeSeederCommand extends GeneratorCommand {
+  final String? _testRoot;
+  MakeSeederCommand({String? testRoot}) : _testRoot = testRoot;
+  @override
+  String getProjectRoot() => _testRoot ?? super.getProjectRoot();
   @override
   String get name => 'make:seeder';
 

@@ -14,6 +14,10 @@ import 'package:magic_cli/src/stubs/factory_stubs.dart';
 /// magic make:factory UserFactory  # Same result — no double-suffix
 /// ```
 class MakeFactoryCommand extends GeneratorCommand {
+  final String? _testRoot;
+  MakeFactoryCommand({String? testRoot}) : _testRoot = testRoot;
+  @override
+  String getProjectRoot() => _testRoot ?? super.getProjectRoot();
   @override
   String get name => 'make:factory';
 
