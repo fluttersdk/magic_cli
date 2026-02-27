@@ -1,0 +1,22 @@
+/// Event stub templates for Magic CLI code generation.
+///
+/// Provides raw string constants for the `magic make:event` command.
+library;
+
+/// MagicEvent subclass stub — a dispatchable application event.
+const String eventStub = r'''
+import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+
+/// {{ className }} event.
+///
+/// Dispatched when {{ description }}.
+///
+/// ## Dispatch
+///
+/// ```dart
+/// Event.dispatch({{ className }}());
+/// ```
+class {{ className }} extends MagicEvent {
+  const {{ className }}();
+}
+''';

@@ -1,10 +1,17 @@
+/// Factory stub templates for Magic CLI code generation.
+///
+/// Provides raw string constants for the `magic make:factory` command.
+library;
+
+/// Model factory stub — generates fake model instances for testing and seeding.
+const String factoryStub = r'''
 import 'package:fluttersdk_magic/fluttersdk_magic.dart';
 
 import '../../app/models/{{ snakeName }}.dart';
 
 /// {{ className }}
 ///
-/// Generates fake {{ modelName }} instances for seeding and testing.
+/// Generates fake [{{ modelName }}] instances for seeding and testing.
 class {{ className }} extends Factory<{{ modelName }}> {
   @override
   {{ modelName }} newInstance() => {{ modelName }}();
@@ -13,14 +20,14 @@ class {{ className }} extends Factory<{{ modelName }}> {
   Map<String, dynamic> definition() {
     return {
       'name': faker.person.name(),
-      'email': faker.internet.email(),
-      // Add more attributes here
+      // Add more attributes here.
     };
   }
 
-  // Custom States
-  // 
+  // Custom states:
+  //
   // {{ className }} inactive() {
   //   return state({'is_active': false}) as {{ className }};
   // }
 }
+''';

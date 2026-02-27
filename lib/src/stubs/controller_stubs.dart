@@ -1,0 +1,158 @@
+/// Controller stub templates for Magic CLI code generation.
+///
+/// Provides raw string constants for the `magic make:controller` command.
+library;
+
+/// Basic controller stub — minimal MagicController singleton.
+const String controllerStub = r'''
+import 'package:flutter/material.dart';
+import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+
+// TODO: Import your views
+// import '../../resources/views/{{ snakeName }}/index_view.dart';
+
+/// {{ className }} Controller.
+class {{ className }}Controller extends MagicController {
+  /// Singleton accessor with lazy registration.
+  static {{ className }}Controller get instance =>
+      Magic.findOrPut({{ className }}Controller.new);
+
+  // ---------------------------------------------------------------------------
+  // Actions (return Widget from resources/views)
+  // ---------------------------------------------------------------------------
+
+  /// GET /{{ snakeName }} — Display the index view.
+  Widget index() {
+    // return const {{ className }}IndexView();
+    return const Scaffold(
+      body: Center(child: Text('{{ className }} Index')),
+    );
+  }
+
+  /// GET /{{ snakeName }}/:id — Display a single item.
+  Widget show(String id) {
+    return Scaffold(
+      body: Center(child: Text('{{ className }} #$id')),
+    );
+  }
+}
+''';
+
+/// Resource controller stub — full CRUD with MagicStateMixin.
+const String controllerResourceStub = r'''
+import 'package:flutter/material.dart';
+import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+
+import '../../resources/views/{{ snakeName }}/index_view.dart';
+import '../../resources/views/{{ snakeName }}/show_view.dart';
+import '../../resources/views/{{ snakeName }}/create_view.dart';
+import '../../resources/views/{{ snakeName }}/edit_view.dart';
+
+/// {{ className }} Resource Controller.
+///
+/// Handles CRUD operations for {{ className }} resources.
+class {{ className }}Controller extends MagicController
+    with MagicStateMixin<List<dynamic>>, ValidatesRequests {
+  /// Singleton accessor with lazy registration.
+  static {{ className }}Controller get instance =>
+      Magic.findOrPut({{ className }}Controller.new);
+
+  // ---------------------------------------------------------------------------
+  // Resource Actions (CRUD)
+  // ---------------------------------------------------------------------------
+
+  /// GET /{{ snakeName }} — Display a listing of items.
+  Widget index() {
+    if (isEmpty) load();
+    return const {{ className }}IndexView();
+  }
+
+  /// GET /{{ snakeName }}/create — Show the form for creating a new item.
+  Widget create() => const {{ className }}CreateView();
+
+  /// GET /{{ snakeName }}/:id — Display the specified item.
+  Widget show(String id) => const {{ className }}ShowView();
+
+  /// GET /{{ snakeName }}/:id/edit — Show the form for editing the item.
+  Widget edit(String id) => const {{ className }}EditView();
+
+  // ---------------------------------------------------------------------------
+  // Business Logic
+  // ---------------------------------------------------------------------------
+
+  /// Load all items from the API.
+  Future<void> load() async {
+    setLoading();
+
+    try {
+      // final items = await {{ className }}.all();
+      // setSuccess(items);
+      setSuccess([]);
+    } catch (e, s) {
+      Log.error('Failed to load {{ snakeName }}s: $e\n$s', e);
+      setError(trans('errors.network_error'));
+    }
+  }
+
+  /// Store a newly created item.
+  Future<void> store(Map<String, dynamic> data) async {
+    setLoading();
+    clearErrors();
+
+    final response = await Http.post('/{{ snakeName }}s', data: data);
+
+    if (response.successful) {
+      Magic.toast(trans('{{ snakeName }}s.created_successfully'));
+      MagicRoute.to('/{{ snakeName }}s');
+      return;
+    }
+
+    handleApiError(response, fallback: trans('{{ snakeName }}s.create_failed'));
+  }
+
+  /// Update the specified item.
+  Future<void> update(String id, Map<String, dynamic> data) async {
+    setLoading();
+    clearErrors();
+
+    final response = await Http.put('/{{ snakeName }}s/$id', data: data);
+
+    if (response.successful) {
+      Magic.toast(trans('{{ snakeName }}s.updated_successfully'));
+      MagicRoute.to('/{{ snakeName }}s/$id');
+      return;
+    }
+
+    handleApiError(response, fallback: trans('{{ snakeName }}s.update_failed'));
+  }
+
+  /// Remove the specified item.
+  Future<void> destroy(String id) async {
+    final confirmed = await Magic.confirm(
+      title: trans('common.confirm'),
+      message: trans('{{ snakeName }}s.delete_confirm'),
+      confirmText: trans('common.delete'),
+      cancelText: trans('common.cancel'),
+    );
+
+    if (!confirmed) return;
+
+    setLoading();
+
+    try {
+      final response = await Http.delete('/{{ snakeName }}s/$id');
+
+      if (response.successful) {
+        Magic.toast(trans('{{ snakeName }}s.deleted_successfully'));
+        MagicRoute.to('/{{ snakeName }}s');
+        return;
+      }
+
+      setError(trans('{{ snakeName }}s.delete_failed'));
+    } catch (e, s) {
+      Log.error('Failed to delete {{ snakeName }}: $e\n$s', e);
+      setError(trans('errors.network_error'));
+    }
+  }
+}
+''';

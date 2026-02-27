@@ -1,12 +1,21 @@
+/// Model stub templates for Magic CLI code generation.
+///
+/// Provides raw string constants for the `magic make:model` command.
+library;
+
+/// Eloquent model stub — HasTimestamps + InteractsWithPersistence.
+const String modelStub = r'''
 import 'package:fluttersdk_magic/fluttersdk_magic.dart';
 
 /// {{ className }} model.
 class {{ className }} extends Model with HasTimestamps, InteractsWithPersistence {
+  {{ className }}() : super();
+
   /// The table associated with the model.
   @override
   String get table => '{{ tableName }}';
 
-  /// The API resource for remote operations.
+  /// The API resource endpoint for remote operations.
   @override
   String get resource => '{{ resourceName }}';
 
@@ -18,23 +27,16 @@ class {{ className }} extends Model with HasTimestamps, InteractsWithPersistence
   @override
   Map<String, String> get casts => {};
 
-  /// The model relationships for automatic casting.
-  /// Define nested models that appear in API responses.
-  // @override
-  // Map<String, Model Function()> get relations => {
-  //   'user': User.new,
-  // };
-
   // ---------------------------------------------------------------------------
   // Typed Accessors
   // ---------------------------------------------------------------------------
-
+  //
   // Define your fillable and casts above, then run:
   //   magic make:model-types {{ className }}
   //
   // Or add manually:
-  //   String? get name => getAttribute('name') as String?;
-  //   set name(String? value) => setAttribute('name', value);
+  //   String? get name => get<String>('name');
+  //   set name(String? value) => set('name', value);
 
   // ---------------------------------------------------------------------------
   // Static Helpers
@@ -44,7 +46,8 @@ class {{ className }} extends Model with HasTimestamps, InteractsWithPersistence
   static Future<{{ className }}?> find(dynamic id) =>
       InteractsWithPersistence.findById<{{ className }}>(id, {{ className }}.new);
 
-  /// Get all {{ className }}s.
+  /// Get all {{ className }} records.
   static Future<List<{{ className }}>> all() =>
       InteractsWithPersistence.allModels<{{ className }}>({{ className }}.new);
 }
+''';
