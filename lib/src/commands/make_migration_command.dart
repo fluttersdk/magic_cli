@@ -1,148 +1,119 @@
-import 'dart:io';
-
-import 'package:magic_cli/magic_cli.dart';
+import 'package:args/args.dart';
+import 'package:magic_cli/src/console/generator_command.dart';
+import 'package:magic_cli/src/console/string_helper.dart';
+import 'package:magic_cli/src/stubs/migration_stubs.dart';
+import 'package:path/path.dart' as path;
 
 /// The Make Migration Command.
 ///
-/// Scaffolds a new migration file with the proper naming convention and
-/// boilerplate code using `.stub` templates.
+/// Scaffolds a new timestamped migration file inside `lib/database/migrations/`
+/// using the `migrationCreateStub` (when `--create` is passed) or the plain
+/// `migrationStub` otherwise.
 ///
 /// ## Usage
 ///
 /// ```bash
 /// magic make:migration create_users_table
-/// magic make:migration CreateUsersTable
+/// magic make:migration create_users_table --create=users
+/// magic make:migration add_email_to_users --table=users
 /// ```
 ///
 /// ## Output
 ///
-/// Creates a file in `lib/database/migrations/` with:
-/// - Timestamp-prefixed filename (snake_case)
-/// - Migration class with up/down methods
-/// - Proper imports
-class MakeMigrationCommand extends Command {
+/// Creates a file named `m_YYYYMMDDHHMMSS_{name}.dart` in
+/// `lib/database/migrations/`.
+class MakeMigrationCommand extends GeneratorCommand {
   @override
   String get name => 'make:migration';
 
   @override
   String get description => 'Create a new migration file';
 
-  /// Execute the console command.
   @override
-  Future<void> handle() async {
-    // Get the migration name from arguments
-    if (arguments.rest.isEmpty) {
-      error('Please provide a migration name.');
-      error('Usage: magic make:migration <name>');
-      return;
+  String getDefaultNamespace() => 'lib/database/migrations';
+
+  /// Adds the `--create` and `--table` options on top of the inherited
+  /// `--force` flag registered by [GeneratorCommand.configure].
+  @override
+  void configure(ArgParser parser) {
+    super.configure(parser);
+    parser.addOption(
+      'create',
+      abbr: 'c',
+      help: 'The table to be created (selects the create stub)',
+    );
+    parser.addOption(
+      'table',
+      abbr: 't',
+      help: 'The table to migrate',
+    );
+  }
+
+  /// Selects the create stub when `--create` is supplied, plain stub otherwise.
+  @override
+  String getStub() =>
+      option('create') != null ? migrationCreateStub : migrationStub;
+
+  /// Returns the default output namespace for migration files.
+  ///
+  /// Migration filenames carry a timestamp prefix: `m_YYYYMMDDHHMMSS_{name}.dart`.
+  /// This overrides [GeneratorCommand.getPath] to inject that prefix.
+  @override
+  String getPath(String name) {
+    final parsed = StringHelper.parseName(name);
+    final projectRoot = getProjectRoot();
+    final namespace = getDefaultNamespace();
+
+    // 1. Build the timestamp-prefixed filename.
+    final timestamp = _buildTimestamp();
+    final snakeName = StringHelper.toSnakeCase(parsed.className);
+    final fileName = 'm_${timestamp}_$snakeName.dart';
+
+    // 2. Respect nested directory if the user passed a slash-separated path.
+    if (parsed.directory.isEmpty) {
+      return path.join(projectRoot, namespace, fileName);
     }
 
-    final inputName = arguments.rest.first;
+    return path.join(projectRoot, namespace, parsed.directory, fileName);
+  }
 
-    // Normalize to snake_case for file naming
-    final migrationName = _toSnakeCase(inputName);
+  /// Provides placeholder replacements for the migration stub.
+  ///
+  /// - `{{ className }}` — timestamped PascalCase class identifier.
+  /// - `{{ fullName }}` — snake_case timestamp+name (used as migration `name`).
+  /// - `{{ tableName }}` — the target table name (from `--create`, `--table`,
+  ///   or derived from the migration name).
+  @override
+  Map<String, String> getReplacements(String name) {
+    final timestamp = _buildTimestamp();
+    final snakeName = StringHelper.toSnakeCase(
+      StringHelper.parseName(name).className,
+    );
+    final fullName = '${timestamp}_$snakeName';
 
-    // Generate timestamp prefix
+    // Derive table name: --create > --table > snake_name without verb wrapper.
+    final tableName = option('create') ??
+        option('table') ??
+        StringHelper.toSnakeCase(StringHelper.parseName(name).className);
+
+    // Build PascalCase class name from the full timestamp+name.
+    final className = StringHelper.toPascalCase(fullName);
+
+    return {
+      '{{ className }}': className,
+      '{{ fullName }}': fullName,
+      '{{ tableName }}': tableName,
+    };
+  }
+
+  /// Produces a compact 14-digit timestamp string `YYYYMMDDHHmmss`.
+  String _buildTimestamp() {
     final now = DateTime.now();
-    final timestamp = '${now.year}_'
-        '${now.month.toString().padLeft(2, '0')}_'
-        '${now.day.toString().padLeft(2, '0')}_'
+    return '${now.year}'
+        '${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}'
         '${now.hour.toString().padLeft(2, '0')}'
         '${now.minute.toString().padLeft(2, '0')}'
         '${now.second.toString().padLeft(2, '0')}';
-
-    // Generate class name (PascalCase)
-    final className = _toPascalCase(migrationName);
-
-    // Full migration identifier (used internally for tracking)
-    final fullName = '${timestamp}_$migrationName';
-
-    // Filename with 'm_' prefix for Dart lint compliance
-    final fileName = 'm_$fullName.dart';
-
-    // Create migrations directory if it doesn't exist
-    final dir = Directory('lib/database/migrations');
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-      comment('Created directory: lib/database/migrations/');
-    }
-
-    // Detect if this is a create table migration
-    final isCreate =
-        migrationName.startsWith('create_') && migrationName.endsWith('_table');
-
-    // Generate file content using stubs
-    final content =
-        _generateFromStub(fullName, className, migrationName, isCreate);
-
-    if (content.isEmpty) {
-      error('Failed to generate migration content.');
-      return;
-    }
-
-    // Write file
-    final file = File('${dir.path}/$fileName');
-    file.writeAsStringSync(content);
-
-    newLine();
-    success('Created migration: lib/database/migrations/$fileName');
-  }
-
-  /// Convert PascalCase or camelCase to snake_case.
-  String _toSnakeCase(String input) {
-    // If already snake_case, return as is
-    if (input.contains('_') && input == input.toLowerCase()) {
-      return input;
-    }
-
-    // Convert PascalCase/camelCase to snake_case
-    return input
-        .replaceAllMapped(
-          RegExp(r'([A-Z])'),
-          (match) => '_${match.group(1)!.toLowerCase()}',
-        )
-        .replaceFirst(RegExp(r'^_'), ''); // Remove leading underscore
-  }
-
-  /// Convert snake_case to PascalCase.
-  String _toPascalCase(String input) {
-    return input
-        .split('_')
-        .map((word) => word.isEmpty
-            ? ''
-            : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
-        .join('');
-  }
-
-  /// Generate migration content from stub files.
-  String _generateFromStub(
-    String fullName,
-    String className,
-    String migrationName,
-    bool isCreate,
-  ) {
-    // Select appropriate stub
-    final stubName = isCreate ? 'migration.create' : 'migration';
-
-    // Build replacements map
-    final replacements = <String, String>{
-      'fullName': fullName,
-      'className': className,
-    };
-
-    // Add table name for create migrations
-    if (isCreate) {
-      final tableName =
-          migrationName.replaceFirst('create_', '').replaceFirst('_table', '');
-      replacements['tableName'] = tableName;
-    }
-
-    // Load and process stub
-    try {
-      return StubLoader.makeSync(stubName, replacements);
-    } on StubNotFoundException catch (e) {
-      error('Error: ${e.toString()}');
-      return '';
-    }
   }
 }

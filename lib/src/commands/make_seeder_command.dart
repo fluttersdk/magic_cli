@@ -1,18 +1,19 @@
-import 'dart:io';
-
-import 'package:magic_cli/magic_cli.dart';
+import 'package:magic_cli/src/console/generator_command.dart';
+import 'package:magic_cli/src/console/string_helper.dart';
+import 'package:magic_cli/src/stubs/seeder_stubs.dart';
 
 /// The Make Seeder Command.
 ///
-/// Scaffolds a new seeder file using `.stub` templates.
+/// Scaffolds a new database seeder inside `lib/database/seeders/`.
+/// Automatically appends the `Seeder` suffix when the caller omits it.
 ///
 /// ## Usage
 ///
 /// ```bash
-/// magic make:seeder UserSeeder
-/// magic make:seeder User          # Automatically appends 'Seeder'
+/// magic make:seeder User         # → UserSeeder in user_seeder.dart
+/// magic make:seeder UserSeeder   # Same result — no double-suffix
 /// ```
-class MakeSeederCommand extends Command {
+class MakeSeederCommand extends GeneratorCommand {
   @override
   String get name => 'make:seeder';
 
@@ -20,69 +21,47 @@ class MakeSeederCommand extends Command {
   String get description => 'Create a new seeder class';
 
   @override
-  Future<void> handle() async {
-    if (arguments.rest.isEmpty) {
-      error('Please provide a seeder name.');
-      error('Usage: magic make:seeder <name>');
-      return;
-    }
+  String getDefaultNamespace() => 'lib/database/seeders';
 
-    final seederName = arguments.rest.first;
-    // Strip 'Seeder' suffix case-insensitively if present
-    final modelName = seederName.toLowerCase().endsWith('seeder')
-        ? seederName.substring(0, seederName.length - 6)
-        : seederName;
-    final className = '${modelName}Seeder';
-    final fileName = _toSnakeCase(className);
+  /// Always returns the seeder stub.
+  @override
+  String getStub() => seederStub;
 
-    // Create seeders directory if it doesn't exist
-    final dir = Directory('lib/database/seeders');
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-      comment('Created directory: lib/database/seeders/');
-    }
+  /// Normalises [name] so it always carries the `Seeder` suffix.
+  ///
+  /// Operates only on the last path segment, preserving nested directories.
+  String _normalizeName(String name) {
+    final parsed = StringHelper.parseName(name);
+    final className = parsed.className.endsWith('Seeder')
+        ? parsed.className
+        : '${parsed.className}Seeder';
 
-    // Check if file already exists
-    final file = File('${dir.path}/$fileName.dart');
-    if (file.existsSync()) {
-      error('Seeder already exists: ${file.path}');
-      return;
-    }
-
-    // Generate file content using stub
-    final content = _generateFromStub(className, modelName);
-
-    if (content.isEmpty) {
-      error('Failed to generate seeder content.');
-      return;
-    }
-
-    // Write file
-    file.writeAsStringSync(content);
-    newLine();
-    success('Created seeder: lib/database/seeders/$fileName.dart');
+    return parsed.directory.isEmpty
+        ? className
+        : '${parsed.directory}/$className';
   }
 
-  /// Convert PascalCase to snake_case.
-  String _toSnakeCase(String input) {
-    return input
-        .replaceAllMapped(
-            RegExp(r'[A-Z]'), (match) => '_${match.group(0)!.toLowerCase()}')
-        .replaceFirst('_', '');
-  }
+  /// Overrides [GeneratorCommand.getPath] to apply the suffix-corrected name.
+  @override
+  String getPath(String name) => super.getPath(_normalizeName(name));
 
-  /// Generate seeder content from stub file.
-  String _generateFromStub(String className, String modelName) {
-    final replacements = <String, String>{
-      'className': className,
-      'modelName': modelName,
-    };
+  /// Overrides [GeneratorCommand.buildClass] to apply the suffix-corrected name.
+  ///
+  /// Ensures [replaceClass] fills `{{ className }}` with the full
+  /// `Seeder`-suffixed class name, not the raw user input.
+  @override
+  String buildClass(String name) => super.buildClass(_normalizeName(name));
 
-    try {
-      return StubLoader.makeSync('seeder', replacements);
-    } on StubNotFoundException catch (e) {
-      error('Error: ${e.toString()}');
-      return '';
-    }
+  /// Provides the remaining placeholder replacements for the seeder stub.
+  ///
+  /// `{{ className }}` is handled upstream by [buildClass] normalisation.
+  /// Here we only supply `{{ snakeName }}` for the model factory comment.
+  @override
+  Map<String, String> getReplacements(String name) {
+    // [name] is already normalised (Seeder-suffixed) at this point.
+    final parsed = StringHelper.parseName(name);
+    final snakeName = StringHelper.toSnakeCase(parsed.className);
+
+    return {'{{ snakeName }}': snakeName};
   }
 }

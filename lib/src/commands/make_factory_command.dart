@@ -1,18 +1,19 @@
-import 'dart:io';
-
-import 'package:magic_cli/magic_cli.dart';
+import 'package:magic_cli/src/console/generator_command.dart';
+import 'package:magic_cli/src/console/string_helper.dart';
+import 'package:magic_cli/src/stubs/factory_stubs.dart';
 
 /// The Make Factory Command.
 ///
-/// Scaffolds a new factory file using `.stub` templates.
+/// Scaffolds a new model factory inside `lib/database/factories/`.
+/// Automatically appends the `Factory` suffix when the caller omits it.
 ///
 /// ## Usage
 ///
 /// ```bash
-/// magic make:factory User
-/// magic make:factory Post
+/// magic make:factory User         # → UserFactory in user_factory.dart
+/// magic make:factory UserFactory  # Same result — no double-suffix
 /// ```
-class MakeFactoryCommand extends Command {
+class MakeFactoryCommand extends GeneratorCommand {
   @override
   String get name => 'make:factory';
 
@@ -20,75 +21,56 @@ class MakeFactoryCommand extends Command {
   String get description => 'Create a new factory class';
 
   @override
-  Future<void> handle() async {
-    if (arguments.rest.isEmpty) {
-      error('Please provide a model name.');
-      error('Usage: magic make:factory <ModelName>');
-      return;
-    }
+  String getDefaultNamespace() => 'lib/database/factories';
 
-    final factoryInput = arguments.rest.first;
-    // Strip 'Factory' suffix case-insensitively if present
-    final modelName = factoryInput.toLowerCase().endsWith('factory')
-        ? factoryInput.substring(0, factoryInput.length - 7)
-        : factoryInput;
-    final className = '${modelName}Factory';
-    final snakeName = _toSnakeCase(modelName);
-    final fileName = _toSnakeCase(className);
+  /// Always returns the factory stub.
+  @override
+  String getStub() => factoryStub;
 
-    // Create factories directory if it doesn't exist
-    final dir = Directory('lib/database/factories');
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-      comment('Created directory: lib/database/factories/');
-    }
+  /// Normalises [name] so it always carries the `Factory` suffix.
+  ///
+  /// Operates only on the last path segment, preserving nested directories.
+  String _normalizeName(String name) {
+    final parsed = StringHelper.parseName(name);
+    final className = parsed.className.endsWith('Factory')
+        ? parsed.className
+        : '${parsed.className}Factory';
 
-    // Check if file already exists
-    final file = File('${dir.path}/$fileName.dart');
-    if (file.existsSync()) {
-      error('Factory already exists: ${file.path}');
-      return;
-    }
-
-    // Generate file content using stub
-    final content = _generateFromStub(modelName, className, snakeName);
-
-    if (content.isEmpty) {
-      error('Failed to generate factory content.');
-      return;
-    }
-
-    // Write file
-    file.writeAsStringSync(content);
-    newLine();
-    success('Created factory: lib/database/factories/$fileName.dart');
+    return parsed.directory.isEmpty
+        ? className
+        : '${parsed.directory}/$className';
   }
 
-  /// Convert PascalCase to snake_case.
-  String _toSnakeCase(String input) {
-    return input
-        .replaceAllMapped(
-            RegExp(r'[A-Z]'), (match) => '_${match.group(0)!.toLowerCase()}')
-        .replaceFirst('_', '');
-  }
+  /// Overrides [GeneratorCommand.getPath] to apply the suffix-corrected name.
+  @override
+  String getPath(String name) => super.getPath(_normalizeName(name));
 
-  /// Generate factory content from stub file.
-  String _generateFromStub(
-    String modelName,
-    String className,
-    String snakeName,
-  ) {
-    final replacements = <String, String>{
-      'modelName': modelName,
-      'className': className,
-      'snakeName': snakeName,
+  /// Overrides [GeneratorCommand.buildClass] to apply the suffix-corrected name.
+  ///
+  /// Ensures [replaceClass] fills `{{ className }}` with the full
+  /// `Factory`-suffixed class name, not the raw user input.
+  @override
+  String buildClass(String name) => super.buildClass(_normalizeName(name));
+
+  /// Provides the remaining placeholder replacements for the factory stub.
+  ///
+  /// `{{ className }}` is filled upstream by [buildClass] normalisation.
+  /// Here we supply `{{ modelName }}` and `{{ snakeName }}` for the stub body.
+  @override
+  Map<String, String> getReplacements(String name) {
+    // [name] is already normalised (Factory-suffixed) at this point.
+    final parsed = StringHelper.parseName(name);
+
+    // Model name = class name without the 'Factory' suffix.
+    final modelName = parsed.className.substring(
+      0,
+      parsed.className.length - 7,
+    );
+    final snakeName = StringHelper.toSnakeCase(modelName);
+
+    return {
+      '{{ modelName }}': modelName,
+      '{{ snakeName }}': snakeName,
     };
-
-    try {
-      return StubLoader.makeSync('factory', replacements);
-    } on StubNotFoundException catch (e) {
-      error('Error: ${e.toString()}');
-      return '';
-    }
   }
 }
