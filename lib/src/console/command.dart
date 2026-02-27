@@ -20,6 +20,15 @@ abstract class Command {
   /// Execute the command — implement in subclasses
   Future<void> handle();
 
+  /// Execute this command programmatically with the given [args].
+  /// Useful for calling commands from other commands.
+  Future<void> runWith(List<String> args) async {
+    final parser = ArgParser();
+    configure(parser);
+    arguments = parser.parse(args);
+    await handle();
+  }
+
   // IO helpers (delegate to ConsoleStyle):
   void info(String message) => stdout.writeln(ConsoleStyle.info(message));
   

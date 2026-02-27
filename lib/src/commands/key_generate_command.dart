@@ -1,17 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
-import 'package:magic_cli/magic_cli.dart';
+
+import 'package:args/args.dart';
+import '../console/command.dart';
+import '../helpers/file_helper.dart';
 
 /// Generate a new application key for the Flutter Magic app.
-///
-/// This command generates a secure random 32-character string to be used as
-/// the APP_KEY. It automatically writes this key to the .env file, creating
-/// it if it doesn't exist.
-///
-/// ## Usage
-///
-/// ```bash
-/// magic key:generate
-/// ```
 class KeyGenerateCommand extends Command {
   @override
   String get name => 'key:generate';
@@ -20,26 +15,42 @@ class KeyGenerateCommand extends Command {
   String get description => 'Generate a new application key';
 
   @override
+  void configure(ArgParser parser) {
+    parser.addFlag(
+      'show',
+      help: 'Display the key instead of modifying the .env file',
+      negatable: false,
+    );
+  }
+
+  @override
   Future<void> handle() async {
-    final key = _generateRandomKey();
-    _writeToEnv(key);
+    // 1. Generate a random 32-byte key and base64 encode it.
+    final key = _generateKey();
+    final keyWithPrefix = 'base64:$key';
 
-    newLine();
-    newLine();
-    success('Application key generated successfully!');
-    keyValue('APP_KEY', key);
-    newLine();
+    // 2. If --show flag is present, only output the key.
+    if (hasOption('show')) {
+      info('APP_KEY=$keyWithPrefix');
+      return;
+    }
 
-    _checkPubspecAssets();
+    // 3. Find project root and target .env file.
+    final root = FileHelper.findProjectRoot();
+    final envFile = File('$root/.env');
+
+    // 4. Update or create .env file with the new key.
+    _writeToEnv(envFile, keyWithPrefix);
+
+    // 5. Output success message.
+    success('Application key set successfully.');
+    keyValue('APP_KEY', keyWithPrefix);
   }
 
   /// Write the key to the environment file.
-  void _writeToEnv(String key) {
-    final envPath = '.env';
-
-    if (FileHelper.fileExists(envPath)) {
-      // Read existing .env and update APP_KEY
-      final content = FileHelper.readFile(envPath);
+  void _writeToEnv(File envFile, String key) {
+    if (envFile.existsSync()) {
+      final content = envFile.readAsStringSync();
       final lines = content.split('\n');
       bool keyExists = false;
 
@@ -58,35 +69,15 @@ class KeyGenerateCommand extends Command {
         lines.add('APP_KEY=$key');
       }
 
-      FileHelper.writeFile(envPath, lines.join('\n'));
+      envFile.writeAsStringSync(lines.join('\n'));
     } else {
-      // Create new .env file
-      comment('Creating .env file...');
-      FileHelper.writeFile(envPath, 'APP_KEY=$key\n');
+      envFile.writeAsStringSync('APP_KEY=$key\n');
     }
   }
 
-  /// Check if .env is included in pubspec.yaml assets.
-  void _checkPubspecAssets() {
-    if (!FileHelper.fileExists('pubspec.yaml')) return;
-
-    final content = FileHelper.readFile('pubspec.yaml');
-    if (!content.contains('- .env')) {
-      newLine();
-      warn('IMPORTANT: Add .env to your pubspec.yaml assets');
-      comment('');
-      comment('flutter:');
-      comment('  assets:');
-      comment('    - .env');
-    }
-  }
-
-  /// Generate a secure random 32-character key.
-  String _generateRandomKey() {
-    final random = Random.secure();
-    const chars =
-        'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-    return List.generate(32, (index) => chars[random.nextInt(chars.length)])
-        .join();
+  /// Generate a secure random 32-byte key base64 encoded.
+  String _generateKey() {
+    final bytes = List.generate(32, (_) => Random.secure().nextInt(256));
+    return base64.encode(bytes);
   }
 }
