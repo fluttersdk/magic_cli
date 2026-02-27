@@ -11,7 +11,7 @@ import '../models/{{ snakeName }}.dart';
 
 /// {{ className }}
 ///
-/// Defines authorization rules for [{{ modelName }}] resources.
+/// Defines authorization rules for [{{ modelClass }}] resources.
 class {{ className }} extends Policy {
   @override
   void register() {

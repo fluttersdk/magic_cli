@@ -1,128 +1,110 @@
-import 'dart:io';
+import 'package:args/args.dart';
+import 'package:magic_cli/src/console/generator_command.dart';
+import 'package:magic_cli/src/console/string_helper.dart';
+import 'package:magic_cli/src/stubs/policy_stubs.dart';
+import 'package:path/path.dart' as path;
 
-import 'package:magic_cli/magic_cli.dart';
-
-/// The Make Policy Command.
+/// The `make:policy` generator command.
 ///
-/// Scaffolds a new authorization policy file using `.stub` templates.
+/// Scaffolds a new authorization policy class inside `lib/app/policies/`,
+/// extending the Magic `Policy` base and registering `Gate.define` callbacks.
 ///
 /// ## Usage
 ///
 /// ```bash
-/// magic make:policy PostPolicy
-/// magic make:policy Post                      # Auto-appends 'Policy'
-/// magic make:policy CommentPolicy --model=Comment
+/// magic make:policy Monitor               # → MonitorPolicy
+/// magic make:policy MonitorPolicy         # Suffix already present — no double-append
+/// magic make:policy Monitor --model=Monitor
+/// magic make:policy Admin/Dashboard       # Nested path support
+/// magic make:policy Monitor --force       # Overwrite existing file
 /// ```
-///
-/// ## Output
-///
-/// Creates a file in `lib/app/policies/` with CRUD ability definitions.
-class MakePolicyCommand extends Command {
-  @override
-  String get name => 'make:policy';
+class MakePolicyCommand extends GeneratorCommand {
+    /// Optional project root override — injected in tests to avoid touching the
+    /// real filesystem.
+    final String? _testRoot;
 
-  @override
-  String get description => 'Create a new authorization policy class';
+    /// Creates a [MakePolicyCommand].
+    ///
+    /// Pass [testRoot] to pin the project root to a temp directory during tests.
+    MakePolicyCommand({String? testRoot}) : _testRoot = testRoot;
 
-  @override
-  void configure(ArgParser parser) {
-    parser.addOption(
-      'model',
-      abbr: 'm',
-      help: 'The model that the policy applies to',
-    );
-  }
+    @override
+    String get name => 'make:policy';
 
-  @override
-  Future<void> handle() async {
-    if (arguments.rest.isEmpty) {
-      error('Please provide a policy name.');
-      error('Usage: magic make:policy <Name> [--model=ModelName]');
-      return;
+    @override
+    String get description => 'Create a new policy class';
+
+    @override
+    String getDefaultNamespace() => 'lib/app/policies';
+
+    @override
+    String getStub() => policyStub;
+
+    @override
+    String getProjectRoot() => _testRoot ?? super.getProjectRoot();
+
+    @override
+    void configure(ArgParser parser) {
+        super.configure(parser);
+        parser.addOption(
+            'model',
+            abbr: 'm',
+            help: 'The model the policy applies to',
+        );
     }
 
-    final policyName = arguments.rest.first;
-    // Strip 'Policy' suffix case-insensitively if present
-    final baseName = policyName.toLowerCase().endsWith('policy')
-        ? policyName.substring(0, policyName.length - 6)
-        : policyName;
-    final className = '${baseName}Policy';
+    /// Override to produce the Policy-suffixed file name as the output path.
+    ///
+    /// The default [getPath] uses [parsed.fileName] which maps `Monitor` →
+    /// `monitor.dart`; we need `monitor_policy.dart`.
+    @override
+    String getPath(String name) {
+        final parsed = StringHelper.parseName(name);
+        final className = _resolveClassName(name);
+        final fileName = StringHelper.toSnakeCase(className);
+        final namespace = getDefaultNamespace();
+        final projectRoot = getProjectRoot();
 
-    // Determine model name from option or policy name
-    final modelOption = arguments['model'] as String?;
-    final modelName = modelOption ?? className.replaceAll('Policy', '');
-    final snakeName = _toSnakeCase(modelName);
-    final fileName = _toSnakeCase(className);
+        if (parsed.directory.isEmpty) {
+            return path.join(projectRoot, namespace, '$fileName.dart');
+        }
 
-    // Validate names
-    if (!RegExp(r'^[A-Z][a-zA-Z0-9]*$')
-        .hasMatch(className.replaceAll('Policy', ''))) {
-      error('Policy name must be PascalCase (e.g., Post, CommentPolicy).');
-      return;
+        return path.join(projectRoot, namespace, parsed.directory, '$fileName.dart');
     }
 
-    // Create policies directory if it doesn't exist
-    final dir = Directory('lib/app/policies');
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-      comment('Created directory: lib/app/policies/');
+    /// Override to inject the Policy-suffixed class name so [buildClass] uses the
+    /// correct value before [getReplacements] runs.
+    @override
+    String replaceClass(String stub, String name) {
+        return stub.replaceAll('{{ className }}', _resolveClassName(name));
     }
 
-    // Check if file already exists
-    final file = File('${dir.path}/$fileName.dart');
-    if (file.existsSync()) {
-      error('Policy already exists: lib/app/policies/$fileName.dart');
-      return;
+    @override
+    Map<String, String> getReplacements(String name) {
+        final className = _resolveClassName(name);
+
+        // Snake-case name without the 'Policy' suffix — used in Gate.define keys.
+        final policyName = StringHelper.toSnakeCase(
+            className.replaceAll('Policy', ''),
+        );
+
+        return {
+            '{{ snakeName }}': StringHelper.toSnakeCase(className),
+            '{{ policyName }}': policyName,
+            '{{ modelClass }}': option('model') as String? ?? 'dynamic',
+        };
     }
 
-    // Generate file content using stub
-    final content = _generateFromStub(className, modelName, snakeName);
+    // ── Private helpers ─────────────────────────────────────────────────────
 
-    if (content.isEmpty) {
-      error('Failed to generate policy content.');
-      return;
+    /// Returns the class name with 'Policy' suffix guaranteed.
+    ///
+    /// When [name] already ends with 'Policy' (e.g. 'MonitorPolicy'), the input
+    /// is returned unchanged; otherwise 'Policy' is appended.
+    String _resolveClassName(String name) {
+        final parsed = StringHelper.parseName(name);
+        return parsed.className.endsWith('Policy')
+            ? parsed.className
+            : '${parsed.className}Policy';
     }
-
-    // Write file
-    file.writeAsStringSync(content);
-    newLine();
-    success('Created policy: lib/app/policies/$fileName.dart');
-  }
-
-  /// Convert PascalCase to snake_case.
-  String _toSnakeCase(String input) {
-    final result = StringBuffer();
-    for (var i = 0; i < input.length; i++) {
-      final char = input[i];
-      if (i > 0 && char.toUpperCase() == char && char.toLowerCase() != char) {
-        result.write('_');
-      }
-      result.write(char.toLowerCase());
-    }
-    return result.toString();
-  }
-
-  /// Generate policy content from stub file.
-  String _generateFromStub(
-    String className,
-    String modelName,
-    String snakeName,
-  ) {
-    // Generate camelCase version for variable names
-    final camelName = modelName[0].toLowerCase() + modelName.substring(1);
-
-    final replacements = <String, String>{
-      'className': className,
-      'modelName': modelName,
-      'snakeName': snakeName,
-      'camelName': camelName,
-    };
-
-    try {
-      return StubLoader.makeSync('policy', replacements);
-    } on StubNotFoundException catch (e) {
-      error('Error: ${e.toString()}');
-      return '';
-    }
-  }
 }
