@@ -359,9 +359,7 @@ class AppServiceProvider extends ServiceProvider {
 
   /// Returns the content for `lib/routes/app.dart`.
   String _routesAppContent() {
-    return '''import 'package:magic/magic.dart';
-
-/// Register application routes.
+    return '''// Register application routes.
 void registerAppRoutes() {
   // TODO: Define your application routes here.
   // Example:

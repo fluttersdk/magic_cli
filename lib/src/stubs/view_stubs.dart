@@ -6,7 +6,6 @@ library;
 /// Stateless view stub — MagicView with auto-injected controller.
 const String viewStub = r'''
 import 'package:flutter/material.dart';
-import 'package:magic/magic.dart';
 
 // TODO: Import your controller
 // import '../../../app/controllers/{{ snakeName }}_controller.dart';
@@ -32,7 +31,6 @@ class {{ className }}View extends StatelessWidget {
 /// Stateful view stub — MagicStatefulView with lifecycle hooks.
 const String viewStatefulStub = r'''
 import 'package:flutter/material.dart';
-import 'package:magic/magic.dart';
 
 // TODO: Import your controller
 // import '../../../app/controllers/{{ snakeName }}_controller.dart';

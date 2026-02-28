@@ -10,16 +10,25 @@ import 'package:magic/magic.dart';
 /// {{ className }}
 ///
 /// Validates incoming data for the {{ actionDescription }} action.
-class {{ className }} extends FormRequest {
-  const {{ className }}(super.data);
+class {{ className }} {
+  {{ className }}(this.data);
+
+  /// The incoming request data.
+  final Map<String, dynamic> data;
 
   /// Validation rules applied to the incoming data.
-  @override
-  Map<String, List<ValidationRule>> rules() {
+  Map<String, List<Rule>> rules() {
     return {
-      // 'name': rules([Required(), Min(2), Max(255)], field: 'name'),
-      // 'email': rules([Required(), Email()], field: 'email'),
+      // 'name': [Required(), Min(2), Max(255)],
+      // 'email': [Required(), Email()],
     };
+  }
+
+  /// Validate the request data.
+  ///
+  /// Returns a [Validator] instance for inspection.
+  Validator validate() {
+    return Validator.make(data, rules());
   }
 }
 ''';

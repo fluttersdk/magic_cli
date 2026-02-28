@@ -7,7 +7,8 @@ library;
 const String policyStub = r'''
 import 'package:magic/magic.dart';
 
-import '../models/{{ modelSnakeName }}.dart';
+// TODO: Import your model
+// import '../models/{{ modelSnakeName }}.dart';
 
 /// {{ className }}
 ///

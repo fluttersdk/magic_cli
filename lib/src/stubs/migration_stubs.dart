@@ -15,8 +15,8 @@ class {{ className }} extends Migration {
   String get name => '{{ fullName }}';
 
   @override
-  Future<void> up() async {
-    await Schema.create('{{ tableName }}', (Blueprint table) {
+  void up() {
+    Schema.create('{{ tableName }}', (Blueprint table) {
       table.id();
       // Add your columns here.
       table.timestamps();
@@ -24,8 +24,8 @@ class {{ className }} extends Migration {
   }
 
   @override
-  Future<void> down() async {
-    await Schema.dropIfExists('{{ tableName }}');
+  void down() {
+    Schema.dropIfExists('{{ tableName }}');
   }
 }
 ''';
@@ -40,12 +40,12 @@ class {{ className }} extends Migration {
   String get name => '{{ fullName }}';
 
   @override
-  Future<void> up() async {
+  void up() {
     // Define your migration here.
   }
 
   @override
-  Future<void> down() async {
+  void down() {
     // Reverse the migration.
   }
 }

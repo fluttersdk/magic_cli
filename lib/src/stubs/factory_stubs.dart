@@ -7,14 +7,21 @@ library;
 const String factoryStub = r'''
 import 'package:magic/magic.dart';
 
-import '../../app/models/{{ snakeName }}.dart';
+// TODO: Import your model
+// import '../../app/models/{{ snakeName }}.dart';
 
 /// {{ className }}
 ///
 /// Generates fake [{{ modelName }}] instances for seeding and testing.
-class {{ className }} extends Factory<{{ modelName }}> {
+class {{ className }} extends Factory<Model> {
+  // TODO: Import and use your model class. Example:
+  //   import '../../app/models/{{ snakeName }}.dart';
+  //   class {{ className }} extends Factory<{{ modelName }}> {
+  //   {{ modelName }} newInstance() => {{ modelName }}();
   @override
-  {{ modelName }} newInstance() => {{ modelName }}();
+  Model newInstance() => throw UnimplementedError(
+    'Import your model and override newInstance()',
+  );
 
   @override
   Map<String, dynamic> definition() {

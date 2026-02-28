@@ -17,6 +17,6 @@ import 'package:magic/magic.dart';
 /// Event.dispatch({{ className }}());
 /// ```
 class {{ className }} extends MagicEvent {
-  const {{ className }}();
+  {{ className }}();
 }
 ''';
