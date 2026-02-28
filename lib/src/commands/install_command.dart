@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:args/args.dart';
 import 'package:path/path.dart' as path;
+import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../console/command.dart';
 import '../helpers/file_helper.dart';
@@ -122,6 +126,12 @@ class InstallCommand extends Command {
     );
 
     _createEnvFiles(root);
+
+    _registerEnvAsset(root);
+
+    if (!withoutDatabase) {
+      await _setupWebSupport(root);
+    }
 
     success('Magic installed successfully!');
   }
@@ -407,6 +417,163 @@ class InstallCommand extends Command {
       }
     }
     return 'My App';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Asset & Web Setup
+  // ---------------------------------------------------------------------------
+
+  /// Adds `.env` to the `flutter.assets` list in `pubspec.yaml`.
+  ///
+  /// Ensures the `flutter` section and `assets` list exist. Skips if `.env`
+  /// is already registered. Uses `yaml_edit` for safe YAML manipulation.
+  ///
+  /// [root] — absolute path to the Flutter project root.
+  void _registerEnvAsset(String root) {
+    final pubspecPath = path.join(root, 'pubspec.yaml');
+
+    if (!FileHelper.fileExists(pubspecPath)) {
+      return;
+    }
+
+    final content = FileHelper.readFile(pubspecPath);
+    final doc = loadYaml(content);
+
+    // 1. Check if .env is already registered — skip if so.
+    if (doc is Map && doc['flutter'] is Map) {
+      final assets = doc['flutter']['assets'];
+      if (assets is List && assets.contains('.env')) {
+        return;
+      }
+    }
+
+    // 2. Build the updated assets list.
+    final existingAssets = <String>[];
+    if (doc is Map && doc['flutter'] is Map) {
+      final assets = doc['flutter']['assets'];
+      if (assets is List) {
+        existingAssets.addAll(assets.cast<String>());
+      }
+    }
+    existingAssets.add('.env');
+
+    // 3. Write back using yaml_edit.
+    final editor = YamlEditor(content);
+
+    try {
+      editor.parseAt(['flutter', 'assets']);
+      // Path exists — update it.
+      editor.update(['flutter', 'assets'], existingAssets);
+    } catch (_) {
+      // Path doesn't exist — create it.
+      try {
+        editor.parseAt(['flutter']);
+        // flutter key exists but no assets.
+        editor.update(['flutter', 'assets'], existingAssets);
+      } catch (_) {
+        // flutter key doesn't exist at all.
+        editor.update(['flutter'], {'assets': existingAssets});
+      }
+    }
+
+    FileHelper.writeFile(pubspecPath, editor.toString());
+  }
+
+  /// Downloads `sqlite3.wasm` to the `web/` directory for web platform support.
+  ///
+  /// Reads the resolved sqlite3 version from `pubspec.lock` and downloads the
+  /// matching WASM binary from GitHub releases. Skips if the file already exists.
+  /// Prints a warning with a manual download URL on failure.
+  ///
+  /// [root] — absolute path to the Flutter project root.
+  Future<void> _setupWebSupport(String root) async {
+    final targetPath = path.join(root, 'web', 'sqlite3.wasm');
+
+    if (FileHelper.fileExists(targetPath)) {
+      return;
+    }
+
+    final version = _resolveSqliteVersion(root);
+    final url = Uri.parse(
+      'https://github.com/simolus3/sqlite3.dart'
+      '/releases/download/sqlite3-$version/sqlite3.wasm',
+    );
+
+    info('Downloading sqlite3.wasm ($version) for web support...');
+
+    final downloaded = await downloadFile(url, targetPath);
+
+    if (downloaded) {
+      info('sqlite3.wasm downloaded to web/');
+    } else {
+      warn('Could not download sqlite3.wasm automatically.');
+      warn('Download manually from: $url');
+    }
+  }
+
+  /// Resolves the sqlite3 package version from `pubspec.lock`.
+  ///
+  /// Falls back to a known-good version if `pubspec.lock` is missing or does
+  /// not contain the sqlite3 package (e.g. before `flutter pub get`).
+  ///
+  /// [root] — absolute path to the Flutter project root.
+  /// Returns the version string (e.g. `'2.4.6'`).
+  String _resolveSqliteVersion(String root) {
+    const fallback = '2.4.6';
+    final lockPath = path.join(root, 'pubspec.lock');
+
+    if (!FileHelper.fileExists(lockPath)) {
+      return fallback;
+    }
+
+    try {
+      final content = FileHelper.readFile(lockPath);
+      final yaml = loadYaml(content) as YamlMap?;
+      final packages = yaml?['packages'] as YamlMap?;
+      final sqlite3 = packages?['sqlite3'] as YamlMap?;
+      final version = sqlite3?['version'] as String?;
+
+      return version ?? fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  /// Downloads a file from [url] to [targetPath].
+  ///
+  /// Returns `true` on success, `false` on failure. Creates parent directories
+  /// if they do not exist. Overridable in tests to avoid real HTTP requests.
+  ///
+  /// [url] — the remote URL to download from.
+  /// [targetPath] — the local file path to write to.
+  Future<bool> downloadFile(Uri url, String targetPath) async {
+    final client = HttpClient();
+
+    try {
+      // 1. Follow redirects and fetch the response.
+      final request = await client.getUrl(url);
+      final response = await request.close();
+
+      if (response.statusCode != 200) {
+        await response.drain<void>();
+        return false;
+      }
+
+      // 2. Ensure target directory exists.
+      final file = File(targetPath);
+      if (!file.parent.existsSync()) {
+        file.parent.createSync(recursive: true);
+      }
+
+      // 3. Stream response body to disk.
+      await response.pipe(file.openWrite());
+
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      client.close();
+    }
   }
 
   /// Writes [content] to [filePath] only if the file does not already exist.

@@ -29,6 +29,43 @@ class _TestInstallCommand extends InstallCommand {
   String getProjectRoot() => _testRoot;
 }
 
+/// Test subclass that stubs file downloads to avoid real HTTP requests.
+class _TestInstallCommandWithDownload extends InstallCommand {
+  _TestInstallCommandWithDownload(this._testRoot);
+
+  final String _testRoot;
+
+  /// Whether [downloadFile] was called during the test.
+  bool downloadFileCalled = false;
+
+  /// The URL passed to [downloadFile].
+  Uri? downloadFileUrl;
+
+  /// Whether the simulated download should succeed.
+  bool simulateDownloadSuccess = true;
+
+  @override
+  String getProjectRoot() => _testRoot;
+
+  @override
+  Future<bool> downloadFile(Uri url, String targetPath) async {
+    downloadFileCalled = true;
+    downloadFileUrl = url;
+
+    if (simulateDownloadSuccess) {
+      // Create a dummy file to simulate a successful download.
+      final file = File(targetPath);
+      if (!file.parent.existsSync()) {
+        file.parent.createSync(recursive: true);
+      }
+      file.writeAsBytesSync([0x00, 0x61, 0x73, 0x6D]); // WASM magic bytes
+      return true;
+    }
+
+    return false;
+  }
+}
+
 /// Creates a minimal Flutter project scaffold in the given directory.
 void _createMinimalFlutterProject(Directory dir) {
   File('${dir.path}/pubspec.yaml').writeAsStringSync('''
@@ -696,6 +733,231 @@ void main() {
           content,
           contains('WDiv'),
           reason: 'welcome_view.dart should use Wind UI components',
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 13: Cache config uses FileStore instance
+    // -----------------------------------------------------------------------
+    group('Cache config uses FileStore instance', () {
+      setUp(() async {
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+      });
+
+      test('cache.dart imports magic barrel', () {
+        final content =
+            File('${tempDir.path}/lib/config/cache.dart').readAsStringSync();
+
+        expect(
+          content,
+          contains("import 'package:magic/magic.dart'"),
+          reason: 'cache.dart should import magic barrel for FileStore',
+        );
+      });
+
+      test('cache.dart uses FileStore() instance not string', () {
+        final content =
+            File('${tempDir.path}/lib/config/cache.dart').readAsStringSync();
+
+        expect(
+          content,
+          contains('FileStore()'),
+          reason: 'cache.dart driver should be FileStore() instance',
+        );
+        expect(
+          content,
+          isNot(contains("'file'")),
+          reason: 'cache.dart should NOT use string driver',
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 14: .env registered as Flutter asset
+    // -----------------------------------------------------------------------
+    group('.env registered as Flutter asset', () {
+      test('adds .env to flutter assets in pubspec.yaml', () async {
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+
+        final content =
+            File('${tempDir.path}/pubspec.yaml').readAsStringSync();
+
+        expect(
+          content,
+          contains('.env'),
+          reason: 'pubspec.yaml should contain .env in flutter assets',
+        );
+      });
+
+      test('is idempotent — does not duplicate .env entry', () async {
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+        await cmd.handle();
+
+        final content =
+            File('${tempDir.path}/pubspec.yaml').readAsStringSync();
+        final count = '.env'.allMatches(content).length;
+
+        expect(
+          count,
+          1,
+          reason: '.env should appear exactly once in pubspec.yaml',
+        );
+      });
+
+      test('works when flutter.assets already exists', () async {
+        // Pre-seed pubspec with existing asset.
+        File('${tempDir.path}/pubspec.yaml').writeAsStringSync('''
+name: test_app
+description: A test Flutter project.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  assets:
+    - assets/images/
+''');
+
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+
+        final content =
+            File('${tempDir.path}/pubspec.yaml').readAsStringSync();
+
+        expect(content, contains('.env'));
+        expect(content, contains('assets/images/'));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 15: Web support (sqlite3.wasm)
+    // -----------------------------------------------------------------------
+    group('Web support (sqlite3.wasm)', () {
+      late _TestInstallCommandWithDownload downloadCmd;
+      late ArgParser downloadParser;
+
+      setUp(() {
+        downloadCmd = _TestInstallCommandWithDownload(tempDir.path);
+        downloadParser = ArgParser();
+        downloadCmd.configure(downloadParser);
+      });
+
+      test('downloads sqlite3.wasm on default install', () async {
+        downloadCmd.arguments = downloadParser.parse([]);
+        await downloadCmd.handle();
+
+        expect(
+          downloadCmd.downloadFileCalled,
+          isTrue,
+          reason: 'downloadFile should be called during install',
+        );
+        expect(
+          File('${tempDir.path}/web/sqlite3.wasm').existsSync(),
+          isTrue,
+          reason: 'web/sqlite3.wasm should exist after install',
+        );
+      });
+
+      test('download URL targets correct GitHub release', () async {
+        downloadCmd.arguments = downloadParser.parse([]);
+        await downloadCmd.handle();
+
+        expect(
+          downloadCmd.downloadFileUrl.toString(),
+          contains('simolus3/sqlite3.dart'),
+          reason: 'Download URL should point to sqlite3.dart releases',
+        );
+        expect(
+          downloadCmd.downloadFileUrl.toString(),
+          contains('sqlite3.wasm'),
+          reason: 'Download URL should target sqlite3.wasm binary',
+        );
+      });
+
+      test('skips download when sqlite3.wasm already exists', () async {
+        // Pre-create the WASM file.
+        final webDir = Directory('${tempDir.path}/web');
+        webDir.createSync(recursive: true);
+        File('${tempDir.path}/web/sqlite3.wasm')
+            .writeAsBytesSync([0x00, 0x61, 0x73, 0x6D]);
+
+        downloadCmd.arguments = downloadParser.parse([]);
+        await downloadCmd.handle();
+
+        expect(
+          downloadCmd.downloadFileCalled,
+          isFalse,
+          reason: 'downloadFile should NOT be called if file already exists',
+        );
+      });
+
+      test('skips wasm download with --without-database flag', () async {
+        downloadCmd.arguments = downloadParser.parse(['--without-database']);
+        await downloadCmd.handle();
+
+        expect(
+          downloadCmd.downloadFileCalled,
+          isFalse,
+          reason: 'downloadFile should NOT be called with --without-database',
+        );
+      });
+
+      test('graceful failure — install completes when download fails', () async {
+        downloadCmd.simulateDownloadSuccess = false;
+        downloadCmd.arguments = downloadParser.parse([]);
+
+        // Should NOT throw.
+        await downloadCmd.handle();
+
+        expect(
+          File('${tempDir.path}/web/sqlite3.wasm').existsSync(),
+          isFalse,
+          reason: 'sqlite3.wasm should NOT exist when download fails',
+        );
+      });
+
+      test('uses version from pubspec.lock when available', () async {
+        // Write a pubspec.lock with a specific sqlite3 version.
+        File('${tempDir.path}/pubspec.lock').writeAsStringSync('''
+packages:
+  sqlite3:
+    dependency: transitive
+    description:
+      name: sqlite3
+      sha256: abc123
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.0"
+''');
+
+        downloadCmd.arguments = downloadParser.parse([]);
+        await downloadCmd.handle();
+
+        expect(
+          downloadCmd.downloadFileUrl.toString(),
+          contains('sqlite3-2.5.0'),
+          reason: 'Should use version from pubspec.lock',
+        );
+      });
+
+      test('falls back to default version without pubspec.lock', () async {
+        downloadCmd.arguments = downloadParser.parse([]);
+        await downloadCmd.handle();
+
+        expect(
+          downloadCmd.downloadFileUrl.toString(),
+          contains('sqlite3-2.4.6'),
+          reason: 'Should fall back to 2.4.6 without pubspec.lock',
         );
       });
     });

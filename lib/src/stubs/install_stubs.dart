@@ -102,10 +102,10 @@ class InstallStubs {
     return StubLoader.load('install/view_config');
   }
 
-  /// Generates `lib/config/cache.dart` with file driver and default TTL.
+  /// Generates `lib/config/cache.dart` with `FileStore()` driver and default TTL.
   ///
-  /// Uses the string `'file'` for the driver (not `FileStore()`) so the
-  /// generated app does not need to import internal Magic driver classes.
+  /// Uses `FileStore()` instance as the driver value, matching the framework's
+  /// own `lib/config/cache.dart` default. Requires `package:magic/magic.dart`.
   static String cacheConfigContent() {
     return StubLoader.load('install/cache_config');
   }

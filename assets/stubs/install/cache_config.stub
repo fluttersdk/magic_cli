@@ -1,10 +1,12 @@
+import 'package:magic/magic.dart';
+
 /// Cache Configuration.
 ///
-/// - `driver`: `'file'` for persistent disk caching, `'memory'` for session-only.
+/// - `driver`: `FileStore()` for persistent disk caching.
 /// - `ttl`: default time-to-live in seconds.
 Map<String, dynamic> get cacheConfig => {
   'cache': {
-    'driver': 'file',
+    'driver': FileStore(),
     'ttl': 3600,
   },
 };
