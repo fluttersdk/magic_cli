@@ -1,10 +1,3 @@
-/// Middleware stub templates for Magic CLI code generation.
-///
-/// Provides raw string constants for the `magic make:middleware` command.
-library;
-
-/// Middleware stub — MagicMiddleware with handle() hook.
-const String middlewareStub = r'''
 import 'package:magic/magic.dart';
 
 /// {{ className }}
@@ -30,4 +23,3 @@ class {{ className }} extends MagicMiddleware {
     next();
   }
 }
-''';

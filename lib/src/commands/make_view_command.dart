@@ -2,7 +2,6 @@ import 'package:args/args.dart';
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
 import 'package:magic_cli/src/helpers/file_helper.dart';
-import 'package:magic_cli/src/stubs/view_stubs.dart';
 
 /// The `magic make:view` generator command.
 ///
@@ -52,7 +51,7 @@ class MakeViewCommand extends GeneratorCommand {
   }
 
   @override
-  String getStub() => hasOption('stateful') ? viewStatefulStub : viewStub;
+  String getStub() => hasOption('stateful') ? 'view.stateful' : 'view';
 
   /// Provides extra placeholder replacements for the view stub.
   ///

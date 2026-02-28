@@ -1,6 +1,5 @@
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/provider_stubs.dart';
 
 /// Make Provider Command.
 ///
@@ -28,7 +27,7 @@ class MakeProviderCommand extends GeneratorCommand {
   String getDefaultNamespace() => 'lib/app/providers';
 
   @override
-  String getStub() => providerStub;
+  String getStub() => 'provider';
 
   /// Returns placeholder replacements for the provider stub.
   ///

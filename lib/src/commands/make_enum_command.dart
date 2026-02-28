@@ -1,6 +1,5 @@
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/enum_stubs.dart';
 
 /// Make Enum Command.
 ///
@@ -28,7 +27,7 @@ class MakeEnumCommand extends GeneratorCommand {
   String getDefaultNamespace() => 'lib/app/enums';
 
   @override
-  String getStub() => enumStub;
+  String getStub() => 'enum';
 
   /// Returns placeholder replacements for the enum stub.
   ///

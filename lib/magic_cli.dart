@@ -17,7 +17,6 @@ export 'src/helpers/platform_helper.dart';
 export 'src/helpers/xml_editor.dart';
 
 // Stubs
-export 'src/stubs/stubs.dart';
 
 // Commands
 export 'src/commands/install_command.dart';

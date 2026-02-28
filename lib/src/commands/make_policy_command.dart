@@ -1,7 +1,6 @@
 import 'package:args/args.dart';
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/policy_stubs.dart';
 import 'package:path/path.dart' as path;
 
 /// The `make:policy` generator command.
@@ -38,7 +37,7 @@ class MakePolicyCommand extends GeneratorCommand {
   String getDefaultNamespace() => 'lib/app/policies';
 
   @override
-  String getStub() => policyStub;
+  String getStub() => 'policy';
 
   @override
   String getProjectRoot() => _testRoot ?? super.getProjectRoot();
@@ -85,8 +84,8 @@ class MakePolicyCommand extends GeneratorCommand {
     final className = _resolveClassName(name);
 
     // Model name: from --model option, or inferred by removing 'Policy' suffix.
-    final modelName = option('model') as String? ??
-        className.replaceAll('Policy', '');
+    final modelName =
+        option('model') as String? ?? className.replaceAll('Policy', '');
     final modelSnakeName = StringHelper.toSnakeCase(modelName);
 
     return {

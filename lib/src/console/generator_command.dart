@@ -3,10 +3,14 @@ import '../helpers/file_helper.dart';
 import 'command.dart';
 import 'string_helper.dart';
 import 'package:path/path.dart' as path;
+import 'dart:io';
+import '../stubs/stub_loader.dart';
 
 /// Base for all make:* generator commands.
 abstract class GeneratorCommand extends Command {
-  /// Returns the raw stub string content
+  /// Returns the stub file name (without `.stub` extension).
+  ///
+  /// For example: `'model'`, `'controller'`, `'controller.resource'`.
   String getStub();
 
   /// Default output directory, e.g. 'lib/app/controllers'
@@ -31,7 +35,16 @@ abstract class GeneratorCommand extends Command {
 
   /// Load stub, replace all placeholders, return final content
   String buildClass(String name) {
-    String stub = getStub();
+    final stubsDir = Platform.environment['MAGIC_CLI_STUBS_DIR'];
+    final stubName = getStub();
+    String stub;
+    if (stubName.contains(' ') || stubName.contains('{')) {
+      // Backwards compatibility for tests that return raw stub content directly
+      stub = stubName;
+    } else {
+      stub = StubLoader.load(stubName,
+          searchPaths: stubsDir != null ? [stubsDir] : null);
+    }
     stub = replaceNamespace(stub, name);
     stub = replaceClass(stub, name);
 

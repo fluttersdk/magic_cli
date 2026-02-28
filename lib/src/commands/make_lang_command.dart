@@ -1,5 +1,4 @@
 import 'package:magic_cli/src/console/generator_command.dart';
-import 'package:magic_cli/src/stubs/lang_stubs.dart';
 
 /// Make Lang Command.
 ///
@@ -28,7 +27,7 @@ class MakeLangCommand extends GeneratorCommand {
   String getDefaultNamespace() => 'assets/lang';
 
   @override
-  String getStub() => langStub;
+  String getStub() => 'lang';
 
   /// Overrides to produce a `.json` path instead of the default `.dart`.
   ///

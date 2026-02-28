@@ -1,7 +1,6 @@
 import 'package:args/args.dart';
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/listener_stubs.dart';
 
 /// Make Listener Command.
 ///
@@ -30,7 +29,7 @@ class MakeListenerCommand extends GeneratorCommand {
   String getDefaultNamespace() => 'lib/app/listeners';
 
   @override
-  String getStub() => listenerStub;
+  String getStub() => 'listener';
 
   /// Registers the `--event` option in addition to the inherited `--force` flag.
   ///

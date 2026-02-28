@@ -2,7 +2,6 @@ import 'package:args/args.dart';
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
 import 'package:magic_cli/src/helpers/file_helper.dart';
-import 'package:magic_cli/src/stubs/model_stubs.dart';
 import 'package:magic_cli/src/commands/make_migration_command.dart';
 import 'package:magic_cli/src/commands/make_controller_command.dart';
 import 'package:magic_cli/src/commands/make_factory_command.dart';
@@ -86,7 +85,7 @@ class MakeModelCommand extends GeneratorCommand {
   }
 
   @override
-  String getStub() => modelStub;
+  String getStub() => 'model';
 
   @override
   Map<String, String> getReplacements(String name) {

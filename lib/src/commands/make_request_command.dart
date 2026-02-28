@@ -1,6 +1,5 @@
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/request_stubs.dart';
 import 'package:path/path.dart' as path;
 
 /// The `make:request` generator command.
@@ -35,7 +34,7 @@ class MakeRequestCommand extends GeneratorCommand {
   String getDefaultNamespace() => 'lib/app/validation/requests';
 
   @override
-  String getStub() => requestStub;
+  String getStub() => 'request';
 
   @override
   String getProjectRoot() => _testRoot ?? super.getProjectRoot();

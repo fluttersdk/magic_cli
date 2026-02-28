@@ -1,6 +1,5 @@
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/event_stubs.dart';
 
 /// Make Event Command.
 ///
@@ -28,7 +27,7 @@ class MakeEventCommand extends GeneratorCommand {
   String getDefaultNamespace() => 'lib/app/events';
 
   @override
-  String getStub() => eventStub;
+  String getStub() => 'event';
 
   /// Returns placeholder replacements for the event stub.
   ///

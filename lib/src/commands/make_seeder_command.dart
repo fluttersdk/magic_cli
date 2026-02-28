@@ -1,6 +1,5 @@
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/seeder_stubs.dart';
 
 /// The Make Seeder Command.
 ///
@@ -29,7 +28,7 @@ class MakeSeederCommand extends GeneratorCommand {
 
   /// Always returns the seeder stub.
   @override
-  String getStub() => seederStub;
+  String getStub() => 'seeder';
 
   /// Normalises [name] so it always carries the `Seeder` suffix.
   ///

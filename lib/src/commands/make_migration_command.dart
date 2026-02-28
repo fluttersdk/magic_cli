@@ -1,7 +1,6 @@
 import 'package:args/args.dart';
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/migration_stubs.dart';
 import 'package:path/path.dart' as path;
 
 /// The Make Migration Command.
@@ -56,7 +55,7 @@ class MakeMigrationCommand extends GeneratorCommand {
   /// Selects the create stub when `--create` is supplied, plain stub otherwise.
   @override
   String getStub() =>
-      option('create') != null ? migrationCreateStub : migrationStub;
+      option('create') != null ? 'migration.create' : 'migration';
 
   /// Returns the default output namespace for migration files.
   ///

@@ -1,6 +1,5 @@
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/middleware_stubs.dart';
 
 /// Make Middleware Command.
 ///
@@ -27,7 +26,7 @@ class MakeMiddlewareCommand extends GeneratorCommand {
   String getDefaultNamespace() => 'lib/app/middleware';
 
   @override
-  String getStub() => middlewareStub;
+  String getStub() => 'middleware';
 
   /// Returns placeholder replacements for the middleware stub.
   ///

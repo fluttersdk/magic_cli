@@ -2,7 +2,6 @@ import 'package:args/args.dart';
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
 import 'package:magic_cli/src/helpers/file_helper.dart';
-import 'package:magic_cli/src/stubs/controller_stubs.dart';
 
 /// The `magic make:controller` generator command.
 ///
@@ -59,7 +58,7 @@ class MakeControllerCommand extends GeneratorCommand {
 
   @override
   String getStub() =>
-      hasOption('resource') ? controllerResourceStub : controllerStub;
+      hasOption('resource') ? 'controller.resource' : 'controller';
 
   /// Provides extra placeholder replacements for the controller stub.
   ///

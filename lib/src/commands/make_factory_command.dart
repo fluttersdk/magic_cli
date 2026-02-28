@@ -1,6 +1,5 @@
 import 'package:magic_cli/src/console/generator_command.dart';
 import 'package:magic_cli/src/console/string_helper.dart';
-import 'package:magic_cli/src/stubs/factory_stubs.dart';
 
 /// The Make Factory Command.
 ///
@@ -29,7 +28,7 @@ class MakeFactoryCommand extends GeneratorCommand {
 
   /// Always returns the factory stub.
   @override
-  String getStub() => factoryStub;
+  String getStub() => 'factory';
 
   /// Normalises [name] so it always carries the `Factory` suffix.
   ///
