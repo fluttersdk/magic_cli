@@ -212,6 +212,9 @@ class InstallCommand extends Command {
     final providerImports = <String>[];
     final providerEntries = <String>[];
 
+    // Launch is always registered — the welcome view uses Launch.url().
+    providerEntries.add('(app) => LaunchServiceProvider(app),');
+
     if (!withoutAuth) {
       providerEntries.add('(app) => AuthServiceProvider(app),');
       providerEntries.add('(app) => VaultServiceProvider(app),');

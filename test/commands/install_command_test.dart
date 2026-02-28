@@ -782,8 +782,7 @@ void main() {
         cmd.arguments = parser.parse([]);
         await cmd.handle();
 
-        final content =
-            File('${tempDir.path}/pubspec.yaml').readAsStringSync();
+        final content = File('${tempDir.path}/pubspec.yaml').readAsStringSync();
 
         expect(
           content,
@@ -797,8 +796,7 @@ void main() {
         await cmd.handle();
         await cmd.handle();
 
-        final content =
-            File('${tempDir.path}/pubspec.yaml').readAsStringSync();
+        final content = File('${tempDir.path}/pubspec.yaml').readAsStringSync();
         final count = '.env'.allMatches(content).length;
 
         expect(
@@ -831,8 +829,7 @@ flutter:
         cmd.arguments = parser.parse([]);
         await cmd.handle();
 
-        final content =
-            File('${tempDir.path}/pubspec.yaml').readAsStringSync();
+        final content = File('${tempDir.path}/pubspec.yaml').readAsStringSync();
 
         expect(content, contains('.env'));
         expect(content, contains('assets/images/'));
@@ -912,7 +909,8 @@ flutter:
         );
       });
 
-      test('graceful failure — install completes when download fails', () async {
+      test('graceful failure — install completes when download fails',
+          () async {
         downloadCmd.simulateDownloadSuccess = false;
         downloadCmd.arguments = downloadParser.parse([]);
 

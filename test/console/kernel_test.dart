@@ -69,14 +69,14 @@ void main() {
 
     test('register and dispatch works', () async {
       kernel.register(cmd1);
-      
+
       await kernel.handle(['make:test1']);
       expect(cmd1.wasHandled, true);
     });
 
     test('registerMany works', () async {
       kernel.registerMany([cmd1, cmd2]);
-      
+
       await kernel.handle(['make:test2', '--name', 'test']);
       expect(cmd2.wasHandled, true);
       expect(cmd2.option('name'), 'test');
@@ -84,14 +84,14 @@ void main() {
 
     test('help prints correctly formatted text', () async {
       kernel.registerMany([cmd1, cmd2, rootCmd]);
-      
+
       // We can't easily capture stdout without zone tricks,
       // but we can ensure it runs without errors for both empty args and --help
       await kernel.handle([]);
       await kernel.handle(['--help']);
       await kernel.handle(['-h']);
     });
-    
+
     test('version prints without errors', () async {
       await kernel.handle(['--version']);
       await kernel.handle(['-V']);

@@ -116,7 +116,8 @@ void main() {
 
       final migrationsDir =
           Directory('${tempDir.path}/lib/database/migrations');
-      final filesAfterFirst = migrationsDir.listSync().whereType<File>().toList();
+      final filesAfterFirst =
+          migrationsDir.listSync().whereType<File>().toList();
       expect(filesAfterFirst.length, 1);
 
       // 2. Tamper with the file to detect an accidental overwrite.

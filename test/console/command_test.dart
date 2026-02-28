@@ -39,8 +39,9 @@ void main() {
     test('arguments parsing', () async {
       final parser = ArgParser();
       cmd.configure(parser);
-      
-      final results = parser.parse(['--name', 'test_user', '--force', 'pos_arg']);
+
+      final results =
+          parser.parse(['--name', 'test_user', '--force', 'pos_arg']);
       cmd.arguments = results;
 
       expect(cmd.option('name'), 'test_user');

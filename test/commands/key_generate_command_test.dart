@@ -12,10 +12,10 @@ void main() {
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('magic_test_');
     Directory.current = tempDir;
-    
+
     // Create a dummy pubspec.yaml to satisfy FileHelper.findProjectRoot()
     File('${tempDir.path}/pubspec.yaml').writeAsStringSync('name: test_app');
-    
+
     command = KeyGenerateCommand();
   });
 

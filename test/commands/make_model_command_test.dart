@@ -27,7 +27,7 @@ void main() {
 
       final file = File('${tempDir.path}/lib/app/models/monitor.dart');
       expect(file.existsSync(), isTrue);
-      
+
       final content = file.readAsStringSync();
       expect(content, contains('class Monitor extends Model'));
       expect(content, contains("String get table => 'monitors'"));
@@ -40,7 +40,7 @@ void main() {
 
       final file = File('${tempDir.path}/lib/app/models/category.dart');
       expect(file.existsSync(), isTrue);
-      
+
       final content = file.readAsStringSync();
       expect(content, contains('class Category extends Model'));
       expect(content, contains("String get table => 'categories'"));
@@ -52,7 +52,7 @@ void main() {
 
       final file = File('${tempDir.path}/lib/app/models/admin/profile.dart');
       expect(file.existsSync(), isTrue);
-      
+
       final content = file.readAsStringSync();
       expect(content, contains('class Profile extends Model'));
     });
@@ -66,7 +66,7 @@ void main() {
 
       final migDir = Directory('${tempDir.path}/lib/database/migrations');
       expect(migDir.existsSync(), isTrue);
-      
+
       final files = migDir.listSync().whereType<File>().toList();
       expect(files.length, equals(1));
       expect(files.first.path, contains('_create_monitors_table.dart'));
@@ -79,20 +79,36 @@ void main() {
       final modelFile = File('${tempDir.path}/lib/app/models/monitor.dart');
       expect(modelFile.existsSync(), isTrue);
 
-      final ctrlFile = File('${tempDir.path}/lib/app/controllers/monitor_controller.dart');
+      final ctrlFile =
+          File('${tempDir.path}/lib/app/controllers/monitor_controller.dart');
       expect(ctrlFile.existsSync(), isTrue);
     });
 
-    test('--all flag creates model, migration, controller, factory, seeder, policy', () async {
+    test(
+        '--all flag creates model, migration, controller, factory, seeder, policy',
+        () async {
       cmd.arguments = parser.parse(['Monitor', '--all']);
       await cmd.handle();
 
-      expect(File('${tempDir.path}/lib/app/models/monitor.dart').existsSync(), isTrue);
-      expect(File('${tempDir.path}/lib/app/controllers/monitor_controller.dart').existsSync(), isTrue);
-      expect(File('${tempDir.path}/lib/database/factories/monitor_factory.dart').existsSync(), isTrue);
-      expect(File('${tempDir.path}/lib/database/seeders/monitor_seeder.dart').existsSync(), isTrue);
-      expect(File('${tempDir.path}/lib/app/policies/monitor_policy.dart').existsSync(), isTrue);
-      
+      expect(File('${tempDir.path}/lib/app/models/monitor.dart').existsSync(),
+          isTrue);
+      expect(
+          File('${tempDir.path}/lib/app/controllers/monitor_controller.dart')
+              .existsSync(),
+          isTrue);
+      expect(
+          File('${tempDir.path}/lib/database/factories/monitor_factory.dart')
+              .existsSync(),
+          isTrue);
+      expect(
+          File('${tempDir.path}/lib/database/seeders/monitor_seeder.dart')
+              .existsSync(),
+          isTrue);
+      expect(
+          File('${tempDir.path}/lib/app/policies/monitor_policy.dart')
+              .existsSync(),
+          isTrue);
+
       final migDir = Directory('${tempDir.path}/lib/database/migrations');
       final migFiles = migDir.listSync().whereType<File>().toList();
       expect(migFiles.length, equals(1));

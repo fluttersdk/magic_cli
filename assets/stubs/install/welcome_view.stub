@@ -119,7 +119,7 @@ class WelcomeView extends StatelessWidget {
                                             className: 'text-xs text-gray-400 dark:text-gray-500',
                                         ),
                                         WAnchor(
-                                            onTap: () => Log.info('Opening: https://anilcancakir.com'),
+                                            onTap: () => Launch.url('https://anilcancakir.com'),
                                             child: WText(
                                                 'Anılcan Çakır',
                                                 className: '''
@@ -179,7 +179,7 @@ class WelcomeView extends StatelessWidget {
                     className: 'text-sm text-gray-500 dark:text-gray-400 mb-3',
                 ),
                 WAnchor(
-                    onTap: () => Log.info('Opening: $url'),
+                    onTap: () => Launch.url(url),
                     child: WDiv(
                         className: 'flex flex-row items-center gap-1',
                         children: [
