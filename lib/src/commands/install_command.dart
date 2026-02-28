@@ -2,8 +2,8 @@ import 'package:args/args.dart';
 import 'package:path/path.dart' as path;
 
 import '../console/command.dart';
-import '../helpers/config_editor.dart';
 import '../helpers/file_helper.dart';
+import '../stubs/install_stubs.dart';
 
 /// Initialize Magic Framework in an existing Flutter project.
 ///
@@ -23,9 +23,11 @@ import '../helpers/file_helper.dart';
 /// |------|-------------|
 /// | `--without-database` | Skip database directories and `config/database.dart` |
 /// | `--without-auth` | Skip `config/auth.dart` |
+/// | `--without-network` | Skip `config/network.dart` |
+/// | `--without-cache` | Skip `config/cache.dart` |
 /// | `--without-events` | Skip events setup |
 /// | `--without-localization` | Skip `assets/lang/` directory |
-/// | `--without-cache` | Skip cache setup |
+/// | `--without-logging` | Skip `config/logging.dart` |
 class InstallCommand extends Command {
   @override
   String get name => 'install';
@@ -43,13 +45,23 @@ class InstallCommand extends Command {
   @override
   void configure(ArgParser parser) {
     parser.addFlag(
+      'without-auth',
+      help: 'Skip auth setup',
+      negatable: false,
+    );
+    parser.addFlag(
       'without-database',
       help: 'Skip database setup',
       negatable: false,
     );
     parser.addFlag(
-      'without-auth',
-      help: 'Skip auth setup',
+      'without-network',
+      help: 'Skip network setup',
+      negatable: false,
+    );
+    parser.addFlag(
+      'without-cache',
+      help: 'Skip cache setup',
       negatable: false,
     );
     parser.addFlag(
@@ -63,8 +75,8 @@ class InstallCommand extends Command {
       negatable: false,
     );
     parser.addFlag(
-      'without-cache',
-      help: 'Skip cache setup',
+      'without-logging',
+      help: 'Skip logging setup',
       negatable: false,
     );
   }
@@ -73,24 +85,43 @@ class InstallCommand extends Command {
   Future<void> handle() async {
     final root = getProjectRoot();
 
-    final withoutDatabase = arguments['without-database'] as bool;
     final withoutAuth = arguments['without-auth'] as bool;
+    final withoutDatabase = arguments['without-database'] as bool;
+    final withoutNetwork = arguments['without-network'] as bool;
+    final withoutCache = arguments['without-cache'] as bool;
+    final withoutEvents = arguments['without-events'] as bool;
     final withoutLocalization = arguments['without-localization'] as bool;
+    final withoutLogging = arguments['without-logging'] as bool;
 
-    // 1. Create directory structure based on selected flags.
-    _createDirectories(root,
-        withoutDatabase: withoutDatabase,
-        withoutLocalization: withoutLocalization);
+    _createDirectories(
+      root,
+      withoutDatabase: withoutDatabase,
+      withoutEvents: withoutEvents,
+      withoutLocalization: withoutLocalization,
+    );
 
-    // 2. Create config files for the chosen feature set.
-    _createConfigFiles(root,
-        withoutDatabase: withoutDatabase, withoutAuth: withoutAuth);
+    _createConfigFiles(
+      root,
+      withoutAuth: withoutAuth,
+      withoutDatabase: withoutDatabase,
+      withoutNetwork: withoutNetwork,
+      withoutCache: withoutCache,
+      withoutLogging: withoutLogging,
+      withoutLocalization: withoutLocalization,
+    );
 
-    // 3. Create starter files — RouteServiceProvider, AppServiceProvider, routes/app.dart.
     _createStarterFiles(root);
 
-    // 4. Inject Magic bootstrap into main.dart (idempotent — checks before inserting).
-    _bootstrapMainDart(root);
+    _createMainDart(
+      root,
+      withoutAuth: withoutAuth,
+      withoutDatabase: withoutDatabase,
+      withoutNetwork: withoutNetwork,
+      withoutCache: withoutCache,
+      withoutLogging: withoutLogging,
+    );
+
+    _createEnvFiles(root);
 
     success('Magic installed successfully!');
   }
@@ -99,13 +130,10 @@ class InstallCommand extends Command {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /// Create the full Magic directory scaffold.
-  ///
-  /// Skips database directories when [withoutDatabase] is `true`.
-  /// Skips `assets/lang` when [withoutLocalization] is `true`.
   void _createDirectories(
     String root, {
     required bool withoutDatabase,
+    required bool withoutEvents,
     required bool withoutLocalization,
   }) {
     final appDirs = [
@@ -115,12 +143,14 @@ class InstallCommand extends Command {
       'lib/app/middleware',
       'lib/app/policies',
       'lib/app/providers',
-      'lib/app/listeners',
-      'lib/app/events',
       'lib/resources/views',
       'lib/routes',
       'lib/config',
     ];
+
+    if (!withoutEvents) {
+      appDirs.addAll(['lib/app/listeners', 'lib/app/events']);
+    }
 
     for (final dir in appDirs) {
       FileHelper.ensureDirectoryExists(path.join(root, dir));
@@ -142,229 +172,205 @@ class InstallCommand extends Command {
     }
   }
 
-  /// Create the config Dart files.
-  ///
-  /// Always creates `config/app.dart`. Skips `config/auth.dart` when
-  /// [withoutAuth] is `true`. Skips `config/database.dart` when
-  /// [withoutDatabase] is `true`.
   void _createConfigFiles(
     String root, {
-    required bool withoutDatabase,
     required bool withoutAuth,
+    required bool withoutDatabase,
+    required bool withoutNetwork,
+    required bool withoutCache,
+    required bool withoutLogging,
+    required bool withoutLocalization,
   }) {
-    final appConfigPath = path.join(root, 'lib/config/app.dart');
-    if (!FileHelper.fileExists(appConfigPath)) {
-      FileHelper.writeFile(appConfigPath, _appConfigContent());
-    }
+    final providerImports = <String>[];
+    final providerEntries = <String>[];
 
     if (!withoutAuth) {
-      final authConfigPath = path.join(root, 'lib/config/auth.dart');
-      if (!FileHelper.fileExists(authConfigPath)) {
-        FileHelper.writeFile(authConfigPath, _authConfigContent());
-      }
+      providerEntries.add('(app) => AuthServiceProvider(app),');
+      providerEntries.add('(app) => VaultServiceProvider(app),');
     }
-
     if (!withoutDatabase) {
-      final dbConfigPath = path.join(root, 'lib/config/database.dart');
-      if (!FileHelper.fileExists(dbConfigPath)) {
-        FileHelper.writeFile(dbConfigPath, _databaseConfigContent());
-      }
+      providerEntries.add('(app) => DatabaseServiceProvider(app),');
     }
-  }
-
-  /// Create the starter provider and route files.
-  ///
-  /// Files are not overwritten if they already exist.
-  void _createStarterFiles(String root) {
-    final routeProviderPath =
-        path.join(root, 'lib/app/providers/route_service_provider.dart');
-    if (!FileHelper.fileExists(routeProviderPath)) {
-      FileHelper.writeFile(routeProviderPath, _routeServiceProviderContent());
+    if (!withoutNetwork) {
+      providerEntries.add('(app) => NetworkServiceProvider(app),');
+    }
+    if (!withoutCache) {
+      providerEntries.add('(app) => CacheServiceProvider(app),');
+    }
+    if (!withoutLocalization) {
+      providerEntries.add('(app) => LocalizationServiceProvider(app),');
     }
 
-    final appProviderPath =
-        path.join(root, 'lib/app/providers/app_service_provider.dart');
-    if (!FileHelper.fileExists(appProviderPath)) {
-      FileHelper.writeFile(appProviderPath, _appServiceProviderContent());
-    }
-
-    final routesPath = path.join(root, 'lib/routes/app.dart');
-    if (!FileHelper.fileExists(routesPath)) {
-      FileHelper.writeFile(routesPath, _routesAppContent());
-    }
-  }
-
-  /// Inject the Magic bootstrap into `main.dart`.
-  ///
-  /// Idempotent: checks for existing `Magic.init` before inserting to
-  /// prevent duplicate bootstrap calls on repeated runs.
-  void _bootstrapMainDart(String root) {
-    final mainPath = path.join(root, 'lib/main.dart');
-    if (!FileHelper.fileExists(mainPath)) {
-      return;
-    }
-
-    final content = FileHelper.readFile(mainPath);
-
-    // Guard — already bootstrapped, nothing to do.
-    if (content.contains('Magic.init')) {
-      return;
-    }
-
-    // 1. Inject the magic import if not already present.
-    ConfigEditor.addImportToFile(
-      filePath: mainPath,
-      importStatement:
-          "import 'package:magic/magic.dart';",
+    _writeIfNotExists(
+      path.join(root, 'lib/config/app.dart'),
+      InstallStubs.appConfigContent(
+        providerImports: providerImports,
+        providerEntries: providerEntries,
+      ),
     );
 
-    // 2. Inject the config/app.dart import if not already present.
-    ConfigEditor.addImportToFile(
-      filePath: mainPath,
-      importStatement: "import 'config/app.dart';",
+    _writeIfNotExists(
+      path.join(root, 'lib/config/view.dart'),
+      InstallStubs.viewConfigContent(),
     );
 
-    // 3. Make main() async so await Magic.init() is valid.
-    //    Handles both `void main()` and `void main() async` without doubling.
-    final updatedContent = FileHelper.readFile(mainPath);
-    final mainSigPattern = RegExp(r'void main\(\)(\s+async)?');
-    if (mainSigPattern.hasMatch(updatedContent)) {
-      FileHelper.writeFile(
-        mainPath,
-        updatedContent.replaceFirst(
-          mainSigPattern,
-          'Future<void> main() async',
-        ),
+    if (!withoutAuth) {
+      _writeIfNotExists(
+        path.join(root, 'lib/config/auth.dart'),
+        InstallStubs.authConfigContent(),
       );
     }
+    if (!withoutDatabase) {
+      _writeIfNotExists(
+        path.join(root, 'lib/config/database.dart'),
+        InstallStubs.databaseConfigContent(),
+      );
+    }
+    if (!withoutNetwork) {
+      _writeIfNotExists(
+        path.join(root, 'lib/config/network.dart'),
+        InstallStubs.networkConfigContent(),
+      );
+    }
+    if (!withoutCache) {
+      _writeIfNotExists(
+        path.join(root, 'lib/config/cache.dart'),
+        InstallStubs.cacheConfigContent(),
+      );
+    }
+    if (!withoutLogging) {
+      _writeIfNotExists(
+        path.join(root, 'lib/config/logging.dart'),
+        InstallStubs.loggingConfigContent(),
+      );
+    }
+  }
 
-    // 4. Insert Magic.init call before runApp(). The two-space indent matches
-    //    the typical Flutter main() body indentation.
-    ConfigEditor.insertCodeBeforePattern(
-      filePath: mainPath,
-      pattern: RegExp(r'runApp\('),
-      code:
-          '  await Magic.init(\n    configFactories: [() => appConfig],\n  );\n\n  ',
+  void _createStarterFiles(String root) {
+    _writeIfNotExists(
+      path.join(root, 'lib/app/providers/route_service_provider.dart'),
+      InstallStubs.routeServiceProviderContent(),
+    );
+
+    _writeIfNotExists(
+      path.join(root, 'lib/app/providers/app_service_provider.dart'),
+      InstallStubs.appServiceProviderContent(),
+    );
+
+    _writeIfNotExists(
+      path.join(root, 'lib/app/kernel.dart'),
+      InstallStubs.kernelDartContent(),
+    );
+
+    final appName = _getAppName(root);
+
+    _writeIfNotExists(
+      path.join(root, 'lib/routes/app.dart'),
+      InstallStubs.routesAppContent(appName: appName),
+    );
+
+    _writeIfNotExists(
+      path.join(root, 'lib/resources/views/welcome_view.dart'),
+      InstallStubs.welcomeViewContent(appName: appName),
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Content templates
-  // ---------------------------------------------------------------------------
+  void _createMainDart(
+    String root, {
+    required bool withoutAuth,
+    required bool withoutDatabase,
+    required bool withoutNetwork,
+    required bool withoutCache,
+    required bool withoutLogging,
+  }) {
+    final mainPath = path.join(root, 'lib/main.dart');
 
-  /// Returns the content for `lib/config/app.dart`.
-  String _appConfigContent() {
-    return '''import 'package:magic/magic.dart';
+    if (FileHelper.fileExists(mainPath)) {
+      final existing = FileHelper.readFile(mainPath);
+      if (existing.contains('Magic.init')) {
+        // Idempotency check: already injected
+        // warn('main.dart already contains Magic.init — skipping replacement.');
+        return;
+      }
+    }
 
-import '../app/providers/app_service_provider.dart';
-import '../app/providers/route_service_provider.dart';
+    final configImports = <String>[
+      "import 'config/app.dart';",
+      "import 'config/view.dart';",
+    ];
 
-/// Application configuration.
-Map<String, dynamic> get appConfig => {
-  'app': {
-    'name': Env.get('APP_NAME', 'My App'),
-    'env': Env.get('APP_ENV', 'production'),
-    'debug': Env.get('APP_DEBUG', false),
-    'key': Env.get('APP_KEY'),
-    'providers': [
-      (app) => RouteServiceProvider(app),
-      (app) => AppServiceProvider(app),
-    ],
-  },
-};
-''';
+    final configFactories = <String>[
+      '() => appConfig',
+      '() => viewConfig',
+    ];
+
+    if (!withoutAuth) {
+      configImports.add("import 'config/auth.dart';");
+      configFactories.add('() => authConfig');
+    }
+    if (!withoutDatabase) {
+      configImports.add("import 'config/database.dart';");
+      configFactories.add('() => databaseConfig');
+    }
+    if (!withoutNetwork) {
+      configImports.add("import 'config/network.dart';");
+      configFactories.add('() => networkConfig');
+    }
+    if (!withoutCache) {
+      configImports.add("import 'config/cache.dart';");
+      configFactories.add('() => cacheConfig');
+    }
+    if (!withoutLogging) {
+      configImports.add("import 'config/logging.dart';");
+      configFactories.add('() => loggingConfig');
+    }
+
+    final appName = _getAppName(root);
+
+    FileHelper.writeFile(
+      mainPath,
+      InstallStubs.mainDartContent(
+        appName: appName,
+        configImports: configImports,
+        configFactories: configFactories,
+      ),
+    );
   }
 
-  /// Returns the content for `lib/config/auth.dart`.
-  String _authConfigContent() {
-    return '''import 'package:magic/magic.dart';
+  void _createEnvFiles(String root) {
+    final appName = _getAppName(root);
 
-/// Authentication configuration.
-Map<String, dynamic> get authConfig => {
-  'auth': {
-    'defaults': {
-      'guard': 'api',
-    },
-    'guards': {
-      'api': {
-        'driver': 'bearer',
-      },
-    },
-    'endpoints': {
-      'login': Env.get('AUTH_LOGIN_ENDPOINT', '/auth/login'),
-      'logout': Env.get('AUTH_LOGOUT_ENDPOINT', '/auth/logout'),
-      'refresh': Env.get('AUTH_REFRESH_ENDPOINT', '/auth/refresh'),
-    },
-  },
-};
-''';
+    _writeIfNotExists(
+      path.join(root, '.env'),
+      InstallStubs.envContent(appName: appName),
+    );
+
+    _writeIfNotExists(
+      path.join(root, '.env.example'),
+      InstallStubs.envExampleContent(),
+    );
   }
 
-  /// Returns the content for `lib/config/database.dart`.
-  String _databaseConfigContent() {
-    return '''import 'package:magic/magic.dart';
-
-/// Database configuration.
-Map<String, dynamic> get databaseConfig => {
-  'database': {
-    'default': 'sqlite',
-    'connections': {
-      'sqlite': {
-        'driver': 'sqlite',
-        'database': Env.get('DB_DATABASE', 'database.sqlite'),
-      },
-    },
-  },
-};
-''';
+  String _getAppName(String root) {
+    final pubspecPath = path.join(root, 'pubspec.yaml');
+    if (FileHelper.fileExists(pubspecPath)) {
+      try {
+        final yaml = FileHelper.readYamlFile(pubspecPath);
+        final name = yaml['name'] as String? ?? 'My App';
+        return name
+            .split('_')
+            .map((w) => w[0].toUpperCase() + w.substring(1))
+            .join(' ');
+      } catch (_) {
+        return 'My App';
+      }
+    }
+    return 'My App';
   }
 
-  /// Returns the content for `lib/app/providers/route_service_provider.dart`.
-  String _routeServiceProviderContent() {
-    return '''import 'package:magic/magic.dart';
-
-import '../../routes/app.dart';
-
-/// Route Service Provider — registers all application routes.
-class RouteServiceProvider extends ServiceProvider {
-  RouteServiceProvider(super.app);
-
-  @override
-  void register() {}
-
-  @override
-  Future<void> boot() async {
-    registerAppRoutes();
-  }
-}
-''';
-  }
-
-  /// Returns the content for `lib/app/providers/app_service_provider.dart`.
-  String _appServiceProviderContent() {
-    return '''import 'package:magic/magic.dart';
-
-/// App Service Provider — application-level bindings and bootstrapping.
-class AppServiceProvider extends ServiceProvider {
-  AppServiceProvider(super.app);
-
-  @override
-  void register() {}
-
-  @override
-  Future<void> boot() async {}
-}
-''';
-  }
-
-  /// Returns the content for `lib/routes/app.dart`.
-  String _routesAppContent() {
-    return '''// Register application routes.
-void registerAppRoutes() {
-  // TODO: Define your application routes here.
-  // Example:
-  // MagicRoute.page('/', () => HomeController.instance.index());
-}
-''';
+  void _writeIfNotExists(String filePath, String content) {
+    if (!FileHelper.fileExists(filePath)) {
+      FileHelper.writeFile(filePath, content);
+    }
   }
 }
