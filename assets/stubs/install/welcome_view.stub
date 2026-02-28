@@ -1,0 +1,130 @@
+import 'package:flutter/material.dart';
+import 'package:magic/magic.dart';
+
+/// Welcome view — the default landing page for a new Magic application.
+///
+/// Displays the application name (read from config), Magic framework branding,
+/// and three quick-link cards pointing to Docs, GitHub, and CLI Commands.
+class WelcomeView extends StatelessWidget {
+  /// Creates the [WelcomeView].
+  const WelcomeView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: WDiv(
+          className: 'flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900',
+          children: [
+            // ----------------------------------------------------------------
+            // Hero section
+            // ----------------------------------------------------------------
+            WDiv(
+              className: 'flex flex-col items-center justify-center py-16 px-6',
+              children: [
+                WText(
+                  '✨',
+                  className: 'text-6xl mb-4',
+                ),
+                WText(
+                  Config.get('app.name', '{{ appName }}') ?? '{{ appName }}',
+                  className:
+                      'text-4xl font-bold text-gray-900 dark:text-white mb-2',
+                ),
+                WText(
+                  'Built with Magic Framework',
+                  className: 'text-base text-gray-500 dark:text-gray-400',
+                ),
+              ],
+            ),
+
+            // ----------------------------------------------------------------
+            // Quick-link cards
+            // ----------------------------------------------------------------
+            WDiv(
+              className: 'flex flex-col gap-4 px-6 pb-12',
+              children: [
+                _QuickLinkCard(
+                  icon: '📖',
+                  title: 'Documentation',
+                  description: 'Read the Magic Framework docs to get started.',
+                  url: 'https://github.com/fluttersdk/magic',
+                ),
+                _QuickLinkCard(
+                  icon: '🐙',
+                  title: 'GitHub',
+                  description:
+                      'Star the repo, report issues, or contribute code.',
+                  url: 'https://github.com/fluttersdk/magic',
+                ),
+                _QuickLinkCard(
+                  icon: '⚡',
+                  title: 'CLI Commands',
+                  description:
+                      'Run `magic --help` to see all available commands.',
+                  url: 'https://github.com/fluttersdk/magic_cli',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Internal quick-link card widget used by [WelcomeView].
+class _QuickLinkCard extends StatelessWidget {
+  const _QuickLinkCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.url,
+  });
+
+  /// Emoji icon displayed at the top of the card.
+  final String icon;
+
+  /// Card heading.
+  final String title;
+
+  /// Short description shown below the heading.
+  final String description;
+
+  /// Destination URL opened when the card button is tapped.
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return WDiv(
+      className:
+          'bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm '
+          'border border-gray-100 dark:border-gray-700',
+      children: [
+        WDiv(
+          className: 'flex flex-row items-center gap-3 mb-2',
+          children: [
+            WText(icon, className: 'text-2xl'),
+            WText(
+              title,
+              className: 'text-lg font-semibold text-gray-900 dark:text-white',
+            ),
+          ],
+        ),
+        WText(
+          description,
+          className: 'text-sm text-gray-500 dark:text-gray-400 mb-4',
+        ),
+        WButton(
+          onTap: () => Log.info('Opening: $url'),
+          className:
+              'py-3 px-4 bg-primary rounded-lg self-start',
+          child: WText(
+            'Learn more →',
+            className: 'text-white text-sm font-medium',
+          ),
+        ),
+      ],
+    );
+  }
+}

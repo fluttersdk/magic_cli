@@ -1,0 +1,10 @@
+/// Cache Configuration.
+///
+/// - `driver`: `'file'` for persistent disk caching, `'memory'` for session-only.
+/// - `ttl`: default time-to-live in seconds.
+Map<String, dynamic> get cacheConfig => {
+  'cache': {
+    'driver': 'file',
+    'ttl': 3600,
+  },
+};
