@@ -130,6 +130,13 @@ class InstallCommand extends Command {
   // Private helpers
   // ---------------------------------------------------------------------------
 
+  /// Creates all required directories under [root].  Skips optional dirs when
+  /// the corresponding feature flag is disabled.
+  ///
+  /// [root] — absolute path to the Flutter project root.
+  /// [withoutDatabase] — when `true`, skips `lib/database/` tree.
+  /// [withoutEvents] — when `true`, skips `lib/app/events` and `lib/app/listeners`.
+  /// [withoutLocalization] — when `true`, skips `assets/lang/`.
   void _createDirectories(
     String root, {
     required bool withoutDatabase,
@@ -172,6 +179,14 @@ class InstallCommand extends Command {
     }
   }
 
+  /// Writes all config files under `lib/config/`.  Optional configs are skipped
+  /// based on the active feature flags.
+  ///
+  /// Always writes `app.dart` and `view.dart` regardless of flags.
+  /// Builds the dynamic `providerImports` and `providerEntries` lists so that
+  /// `app.dart` lists exactly the providers needed for the enabled features.
+  ///
+  /// [root] — absolute path to the Flutter project root.
   void _createConfigFiles(
     String root, {
     required bool withoutAuth,
@@ -246,6 +261,11 @@ class InstallCommand extends Command {
     }
   }
 
+  /// Writes the framework starter files that are always created:
+  /// `RouteServiceProvider`, `AppServiceProvider`, `kernel.dart`,
+  /// `routes/app.dart`, and `resources/views/welcome_view.dart`.
+  ///
+  /// [root] — absolute path to the Flutter project root.
   void _createStarterFiles(String root) {
     _writeIfNotExists(
       path.join(root, 'lib/app/providers/route_service_provider.dart'),
@@ -275,6 +295,14 @@ class InstallCommand extends Command {
     );
   }
 
+  /// Writes `lib/main.dart` with Magic bootstrap.
+  ///
+  /// Performs an idempotency check first — if `Magic.init` is already present,
+  /// the file is left unchanged to preserve customisations.
+  /// Builds dynamic `configImports` and `configFactories` lists based on flags,
+  /// then delegates rendering to [InstallStubs.mainDartContent].
+  ///
+  /// [root] — absolute path to the Flutter project root.
   void _createMainDart(
     String root, {
     required bool withoutAuth,
@@ -288,8 +316,7 @@ class InstallCommand extends Command {
     if (FileHelper.fileExists(mainPath)) {
       final existing = FileHelper.readFile(mainPath);
       if (existing.contains('Magic.init')) {
-        // Idempotency check: already injected
-        // warn('main.dart already contains Magic.init — skipping replacement.');
+        // Idempotency: Magic.init already present — preserve existing bootstrap.
         return;
       }
     }
@@ -337,6 +364,9 @@ class InstallCommand extends Command {
     );
   }
 
+  /// Writes `.env` and `.env.example` to [root] if they do not already exist.
+  ///
+  /// [root] — absolute path to the Flutter project root.
   void _createEnvFiles(String root) {
     final appName = _getAppName(root);
 
@@ -351,6 +381,13 @@ class InstallCommand extends Command {
     );
   }
 
+  /// Reads the `name` field from `pubspec.yaml` and converts it to Title Case.
+  ///
+  /// For example `magic_e2e_test` → `Magic E2e Test`.
+  /// Falls back to `'My App'` if `pubspec.yaml` is missing or unreadable.
+  ///
+  /// [root] — absolute path to the Flutter project root.
+  /// Returns the human-readable application name string.
   String _getAppName(String root) {
     final pubspecPath = path.join(root, 'pubspec.yaml');
     if (FileHelper.fileExists(pubspecPath)) {
@@ -368,6 +405,13 @@ class InstallCommand extends Command {
     return 'My App';
   }
 
+  /// Writes [content] to [filePath] only if the file does not already exist.
+  ///
+  /// Preserves any customisations the developer may have made after the initial
+  /// install run.
+  ///
+  /// [filePath] — absolute path to the target file.
+  /// [content] — file contents to write on first creation.
   void _writeIfNotExists(String filePath, String content) {
     if (!FileHelper.fileExists(filePath)) {
       FileHelper.writeFile(filePath, content);

@@ -359,7 +359,8 @@ class AppServiceProvider extends ServiceProvider {
   /// showing the Global and Route middleware registration patterns.
   static String kernelDartContent() {
     return r'''
-import 'package:magic/magic.dart';
+// Import Magic to access Kernel, middleware base classes, etc.:
+// import 'package:magic/magic.dart';
 
 /// The HTTP Kernel.
 ///
@@ -448,7 +449,6 @@ void registerAppRoutes() {
   static String welcomeViewContent({required String appName}) {
     return '''
 import 'package:flutter/material.dart';
-import 'package:fluttersdk_wind/fluttersdk_wind.dart';
 import 'package:magic/magic.dart';
 
 /// Welcome view — the default landing page for a new Magic application.
@@ -477,7 +477,7 @@ class WelcomeView extends StatelessWidget {
                   className: 'text-6xl mb-4',
                 ),
                 WText(
-                  Config.get('app.name', '$appName'),
+                  Config.get('app.name', '$appName') ?? '$appName',
                   className:
                       'text-4xl font-bold text-gray-900 dark:text-white mb-2',
                 ),

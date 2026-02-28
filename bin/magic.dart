@@ -8,6 +8,7 @@ import 'package:magic_cli/src/commands/make_factory_command.dart';
 import 'package:magic_cli/src/commands/make_view_command.dart';
 import 'package:magic_cli/src/commands/make_controller_command.dart';
 import 'package:magic_cli/src/commands/make_policy_command.dart';
+import 'package:magic_cli/src/commands/install_command.dart';
 
 void main(List<String> arguments) async {
   final kernel = Kernel();
@@ -22,7 +23,7 @@ void main(List<String> arguments) async {
   kernel.register(MakeLangCommand());
   kernel.register(MakeSeederCommand());
   kernel.register(MakeFactoryCommand());
-
+  kernel.register(InstallCommand());
 
   // Handle arguments
   await kernel.handle(arguments);
