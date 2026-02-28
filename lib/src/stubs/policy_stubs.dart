@@ -5,9 +5,9 @@ library;
 
 /// Policy stub — Gate-based authorization for a model resource.
 const String policyStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
-import '../models/{{ snakeName }}.dart';
+import '../models/{{ modelSnakeName }}.dart';
 
 /// {{ className }}
 ///
@@ -15,10 +15,10 @@ import '../models/{{ snakeName }}.dart';
 class {{ className }} extends Policy {
   @override
   void register() {
-    Gate.define('view-{{ snakeName }}', _view);
-    Gate.define('create-{{ snakeName }}', _create);
-    Gate.define('update-{{ snakeName }}', _update);
-    Gate.define('delete-{{ snakeName }}', _delete);
+    Gate.define('view-{{ modelSnakeName }}', _view);
+    Gate.define('create-{{ modelSnakeName }}', _create);
+    Gate.define('update-{{ modelSnakeName }}', _update);
+    Gate.define('delete-{{ modelSnakeName }}', _delete);
   }
 
   /// Determine if the user can view the [{{ modelName }}].

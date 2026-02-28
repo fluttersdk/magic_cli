@@ -81,6 +81,11 @@ class MakeMigrationCommand extends GeneratorCommand {
     return path.join(projectRoot, namespace, parsed.directory, fileName);
   }
 
+  /// Skip the default class name replacement — migration uses a timestamped
+  /// class name that [getReplacements] provides instead.
+  @override
+  String replaceClass(String stub, String name) => stub;
+
   /// Provides placeholder replacements for the migration stub.
   ///
   /// - `{{ className }}` — timestamped PascalCase class identifier.
@@ -95,16 +100,15 @@ class MakeMigrationCommand extends GeneratorCommand {
     );
     final fullName = '${timestamp}_$snakeName';
 
-    // Derive table name: --create > --table > snake_name without verb wrapper.
+    // Derive table name: --create > --table > snake_name.
     final tableName = (option('create') ??
             option('table') ??
             StringHelper.toSnakeCase(StringHelper.parseName(name).className))
         as String;
-    option('table') ??
-        StringHelper.toSnakeCase(StringHelper.parseName(name).className);
 
-    // Build PascalCase class name from the full timestamp+name.
-    final className = StringHelper.toPascalCase(fullName);
+    // PascalCase class name — uses only the migration name part (no timestamp)
+    // to produce a valid Dart class identifier.
+    final className = StringHelper.toPascalCase(snakeName);
 
     return {
       '{{ className }}': className,

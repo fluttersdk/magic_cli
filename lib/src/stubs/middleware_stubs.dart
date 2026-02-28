@@ -5,7 +5,7 @@ library;
 
 /// Middleware stub — MagicMiddleware with handle() hook.
 const String middlewareStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 /// {{ className }}
 ///

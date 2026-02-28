@@ -5,7 +5,7 @@ library;
 
 /// ServiceProvider stub — register() for bindings, boot() for async setup.
 const String providerStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 /// {{ className }}
 ///

@@ -302,7 +302,7 @@ void main() {
 
       final content = File('${tempDir.path}/lib/main.dart').readAsStringSync();
       expect(content,
-          contains("import 'package:fluttersdk_magic/fluttersdk_magic.dart'"));
+          contains("import 'package:magic/magic.dart'"));
     });
 
     test('injects config/app.dart import into main.dart', () async {

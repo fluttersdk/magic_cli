@@ -5,7 +5,7 @@ library;
 
 /// Form request stub — validation rules for a controller action.
 const String requestStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 /// {{ className }}
 ///

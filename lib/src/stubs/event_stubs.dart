@@ -5,7 +5,7 @@ library;
 
 /// MagicEvent subclass stub — a dispatchable application event.
 const String eventStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 /// {{ className }} event.
 ///

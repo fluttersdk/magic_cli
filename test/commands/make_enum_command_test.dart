@@ -91,17 +91,6 @@ void main() {
       expect(content, contains('fromValue'));
     });
 
-    test('generated enum has selectOptions getter', () async {
-      cmd.arguments = parser.parse(['MonitorType']);
-      await cmd.handle();
-
-      final content = File(
-        '${tempDir.path}/lib/app/enums/monitor_type.dart',
-      ).readAsStringSync();
-
-      expect(content, contains('selectOptions'));
-    });
-
     test('snakeName placeholder is replaced with snake_case', () async {
       cmd.arguments = parser.parse(['MonitorType']);
       await cmd.handle();

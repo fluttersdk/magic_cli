@@ -84,16 +84,16 @@ class MakePolicyCommand extends GeneratorCommand {
   Map<String, String> getReplacements(String name) {
     final className = _resolveClassName(name);
 
-    // Snake-case name without the 'Policy' suffix — used in Gate.define keys.
-    final policyName = StringHelper.toSnakeCase(
-      className.replaceAll('Policy', ''),
-    );
+    // Model name: from --model option, or inferred by removing 'Policy' suffix.
+    final modelName = option('model') as String? ??
+        className.replaceAll('Policy', '');
+    final modelSnakeName = StringHelper.toSnakeCase(modelName);
 
     return {
       '{{ snakeName }}': StringHelper.toSnakeCase(className),
-      '{{ policyName }}': policyName,
-      '{{ modelClass }}': option('model') as String? ?? 'dynamic',
-      '{{ modelName }}': option('model') as String? ?? 'dynamic',
+      '{{ modelSnakeName }}': modelSnakeName,
+      '{{ modelClass }}': modelName,
+      '{{ modelName }}': modelName,
     };
   }
 

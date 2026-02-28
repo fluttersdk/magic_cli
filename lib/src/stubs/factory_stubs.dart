@@ -5,7 +5,7 @@ library;
 
 /// Model factory stub — generates fake model instances for testing and seeding.
 const String factoryStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 import '../../app/models/{{ snakeName }}.dart';
 

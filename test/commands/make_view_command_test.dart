@@ -36,7 +36,7 @@ void main() {
       expect(file.existsSync(), isTrue);
     });
 
-    test('generated file contains LoginView class extending MagicView',
+    test('generated file contains LoginView class extending StatelessWidget',
         () async {
       cmd.arguments = parser.parse(['Login']);
 
@@ -45,7 +45,7 @@ void main() {
       final content = File(
         '${tempDir.path}/lib/resources/views/login_view.dart',
       ).readAsStringSync();
-      expect(content, contains('class LoginView extends MagicView'));
+      expect(content, contains('class LoginView extends StatelessWidget'));
     });
 
     test('auto-appends View suffix when not present', () async {
@@ -70,7 +70,7 @@ void main() {
       expect(file.existsSync(), isTrue);
 
       final content = file.readAsStringSync();
-      expect(content, contains('class LoginView extends MagicView'));
+      expect(content, contains('class LoginView extends StatelessWidget'));
       expect(content, isNot(contains('LoginViewView')));
     });
 
@@ -97,14 +97,14 @@ void main() {
       final content = File(
         '${tempDir.path}/lib/resources/views/auth/register_view.dart',
       ).readAsStringSync();
-      expect(content, contains('class RegisterView extends MagicView'));
+      expect(content, contains('class RegisterView extends StatelessWidget'));
     });
 
     // -----------------------------------------------------------------------
     // Stateful stub
     // -----------------------------------------------------------------------
 
-    test('--stateful flag uses stateful stub (MagicStatefulView)', () async {
+    test('--stateful flag uses stateful stub (StatefulWidget)', () async {
       cmd.arguments = parser.parse(['Dashboard', '--stateful']);
 
       await cmd.handle();
@@ -112,11 +112,10 @@ void main() {
       final content = File(
         '${tempDir.path}/lib/resources/views/dashboard_view.dart',
       ).readAsStringSync();
-      expect(content, contains('MagicStatefulView'));
+      expect(content, contains('class DashboardView extends StatefulWidget'));
     });
 
-    test('basic stub uses stateless MagicView, not MagicStatefulView',
-        () async {
+    test('basic stub uses StatelessWidget', () async {
       cmd.arguments = parser.parse(['Dashboard']);
 
       await cmd.handle();
@@ -124,11 +123,12 @@ void main() {
       final content = File(
         '${tempDir.path}/lib/resources/views/dashboard_view.dart',
       ).readAsStringSync();
-      expect(content, contains('MagicView'));
+      expect(content, contains('class DashboardView extends StatelessWidget'));
       expect(content, isNot(contains('MagicStatefulView')));
     });
 
-    test('stateful stub contains onInit and onClose lifecycle hooks', () async {
+    test('stateful stub contains initState and dispose lifecycle hooks',
+        () async {
       cmd.arguments = parser.parse(['Dashboard', '--stateful']);
 
       await cmd.handle();
@@ -136,8 +136,8 @@ void main() {
       final content = File(
         '${tempDir.path}/lib/resources/views/dashboard_view.dart',
       ).readAsStringSync();
-      expect(content, contains('void onInit()'));
-      expect(content, contains('void onClose()'));
+      expect(content, contains('void initState()'));
+      expect(content, contains('void dispose()'));
     });
 
     // -----------------------------------------------------------------------

@@ -5,7 +5,7 @@ library;
 
 /// Eloquent model stub — HasTimestamps + InteractsWithPersistence.
 const String modelStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 /// {{ className }} model.
 class {{ className }} extends Model with HasTimestamps, InteractsWithPersistence {

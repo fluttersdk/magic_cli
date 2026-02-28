@@ -211,11 +211,11 @@ class InstallCommand extends Command {
       return;
     }
 
-    // 1. Inject the fluttersdk_magic import if not already present.
+    // 1. Inject the magic import if not already present.
     ConfigEditor.addImportToFile(
       filePath: mainPath,
       importStatement:
-          "import 'package:fluttersdk_magic/fluttersdk_magic.dart';",
+          "import 'package:magic/magic.dart';",
     );
 
     // 2. Inject the config/app.dart import if not already present.
@@ -225,11 +225,16 @@ class InstallCommand extends Command {
     );
 
     // 3. Make main() async so await Magic.init() is valid.
+    //    Handles both `void main()` and `void main() async` without doubling.
     final updatedContent = FileHelper.readFile(mainPath);
-    if (updatedContent.contains('void main()')) {
+    final mainSigPattern = RegExp(r'void main\(\)(\s+async)?');
+    if (mainSigPattern.hasMatch(updatedContent)) {
       FileHelper.writeFile(
         mainPath,
-        updatedContent.replaceFirst('void main()', 'Future<void> main()'),
+        updatedContent.replaceFirst(
+          mainSigPattern,
+          'Future<void> main() async',
+        ),
       );
     }
 
@@ -249,7 +254,7 @@ class InstallCommand extends Command {
 
   /// Returns the content for `lib/config/app.dart`.
   String _appConfigContent() {
-    return '''import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+    return '''import 'package:magic/magic.dart';
 
 import '../app/providers/app_service_provider.dart';
 import '../app/providers/route_service_provider.dart';
@@ -272,7 +277,7 @@ Map<String, dynamic> get appConfig => {
 
   /// Returns the content for `lib/config/auth.dart`.
   String _authConfigContent() {
-    return '''import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+    return '''import 'package:magic/magic.dart';
 
 /// Authentication configuration.
 Map<String, dynamic> get authConfig => {
@@ -297,7 +302,7 @@ Map<String, dynamic> get authConfig => {
 
   /// Returns the content for `lib/config/database.dart`.
   String _databaseConfigContent() {
-    return '''import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+    return '''import 'package:magic/magic.dart';
 
 /// Database configuration.
 Map<String, dynamic> get databaseConfig => {
@@ -316,7 +321,7 @@ Map<String, dynamic> get databaseConfig => {
 
   /// Returns the content for `lib/app/providers/route_service_provider.dart`.
   String _routeServiceProviderContent() {
-    return '''import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+    return '''import 'package:magic/magic.dart';
 
 import '../../routes/app.dart';
 
@@ -337,7 +342,7 @@ class RouteServiceProvider extends ServiceProvider {
 
   /// Returns the content for `lib/app/providers/app_service_provider.dart`.
   String _appServiceProviderContent() {
-    return '''import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+    return '''import 'package:magic/magic.dart';
 
 /// App Service Provider — application-level bindings and bootstrapping.
 class AppServiceProvider extends ServiceProvider {
@@ -354,7 +359,7 @@ class AppServiceProvider extends ServiceProvider {
 
   /// Returns the content for `lib/routes/app.dart`.
   String _routesAppContent() {
-    return '''import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+    return '''import 'package:magic/magic.dart';
 
 /// Register application routes.
 void registerAppRoutes() {

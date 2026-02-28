@@ -5,7 +5,7 @@ library;
 
 /// Create migration stub — creates a new table with standard columns.
 const String migrationCreateStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 /// Migration: {{ fullName }}
 ///
@@ -32,7 +32,7 @@ class {{ className }} extends Migration {
 
 /// Blank migration stub — for altering tables or custom operations.
 const String migrationStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 /// Migration: {{ fullName }}
 class {{ className }} extends Migration {

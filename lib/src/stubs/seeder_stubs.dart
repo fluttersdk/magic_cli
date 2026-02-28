@@ -5,7 +5,7 @@ library;
 
 /// Database seeder stub — seeds initial or sample data.
 const String seederStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 /// {{ className }}
 ///

@@ -3,10 +3,8 @@
 /// Provides raw string constants for the `magic make:enum` command.
 library;
 
-/// String-backed enum stub with value/label pattern and SelectOption support.
+/// String-backed enum stub with value/label pattern.
 const String enumStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
-
 /// {{ className }} enum.
 enum {{ className }} {
   sample('sample', 'Sample');
@@ -27,13 +25,6 @@ enum {{ className }} {
     } catch (_) {
       return null;
     }
-  }
-
-  /// Build a list of [SelectOption]s for use in dropdowns.
-  static List<SelectOption<{{ className }}>> get selectOptions {
-    return {{ className }}.values
-        .map((e) => SelectOption(value: e, label: e.label))
-        .toList();
   }
 }
 ''';

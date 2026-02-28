@@ -6,7 +6,7 @@ library;
 /// Basic controller stub — minimal MagicController singleton.
 const String controllerStub = r'''
 import 'package:flutter/material.dart';
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 // TODO: Import your views
 // import '../../resources/views/{{ snakeName }}/index_view.dart';
@@ -41,12 +41,13 @@ class {{ className }}Controller extends MagicController {
 /// Resource controller stub — full CRUD with MagicStateMixin.
 const String controllerResourceStub = r'''
 import 'package:flutter/material.dart';
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
-import '../../resources/views/{{ snakeName }}/index_view.dart';
-import '../../resources/views/{{ snakeName }}/show_view.dart';
-import '../../resources/views/{{ snakeName }}/create_view.dart';
-import '../../resources/views/{{ snakeName }}/edit_view.dart';
+// TODO: Import your views
+// import '../../resources/views/{{ snakeName }}/index_view.dart';
+// import '../../resources/views/{{ snakeName }}/show_view.dart';
+// import '../../resources/views/{{ snakeName }}/create_view.dart';
+// import '../../resources/views/{{ snakeName }}/edit_view.dart';
 
 /// {{ className }} Resource Controller.
 ///
@@ -63,18 +64,36 @@ class {{ className }}Controller extends MagicController
 
   /// GET /{{ snakeName }} — Display a listing of items.
   Widget index() {
-    if (isEmpty) load();
-    return const {{ className }}IndexView();
+    // if (data == null) load();
+    // return const {{ className }}IndexView();
+    return const Scaffold(
+      body: Center(child: Text('{{ className }} Index')),
+    );
   }
 
   /// GET /{{ snakeName }}/create — Show the form for creating a new item.
-  Widget create() => const {{ className }}CreateView();
+  Widget create() {
+    // return const {{ className }}CreateView();
+    return const Scaffold(
+      body: Center(child: Text('{{ className }} Create')),
+    );
+  }
 
   /// GET /{{ snakeName }}/:id — Display the specified item.
-  Widget show(String id) => const {{ className }}ShowView();
+  Widget show(String id) {
+    // return const {{ className }}ShowView();
+    return Scaffold(
+      body: Center(child: Text('{{ className }} #$id')),
+    );
+  }
 
   /// GET /{{ snakeName }}/:id/edit — Show the form for editing the item.
-  Widget edit(String id) => const {{ className }}EditView();
+  Widget edit(String id) {
+    // return const {{ className }}EditView();
+    return Scaffold(
+      body: Center(child: Text('Edit {{ className }} #$id')),
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Business Logic

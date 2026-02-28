@@ -5,7 +5,7 @@ library;
 
 /// MagicListener stub — handles a specific MagicEvent subclass.
 const String listenerStub = r'''
-import 'package:fluttersdk_magic/fluttersdk_magic.dart';
+import 'package:magic/magic.dart';
 
 import '../events/{{ eventSnakeName }}.dart';
 
