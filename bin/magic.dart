@@ -9,6 +9,12 @@ import 'package:magic_cli/src/commands/make_view_command.dart';
 import 'package:magic_cli/src/commands/make_controller_command.dart';
 import 'package:magic_cli/src/commands/make_policy_command.dart';
 import 'package:magic_cli/src/commands/install_command.dart';
+import 'package:magic_cli/src/commands/make_provider_command.dart';
+import 'package:magic_cli/src/commands/make_middleware_command.dart';
+import 'package:magic_cli/src/commands/make_enum_command.dart';
+import 'package:magic_cli/src/commands/make_event_command.dart';
+import 'package:magic_cli/src/commands/make_listener_command.dart';
+import 'package:magic_cli/src/commands/make_request_command.dart';
 
 void main(List<String> arguments) async {
   final kernel = Kernel();
@@ -24,6 +30,12 @@ void main(List<String> arguments) async {
   kernel.register(MakeSeederCommand());
   kernel.register(MakeFactoryCommand());
   kernel.register(InstallCommand());
+  kernel.register(MakeProviderCommand());
+  kernel.register(MakeMiddlewareCommand());
+  kernel.register(MakeEnumCommand());
+  kernel.register(MakeEventCommand());
+  kernel.register(MakeListenerCommand());
+  kernel.register(MakeRequestCommand());
 
   // Handle arguments
   await kernel.handle(arguments);
