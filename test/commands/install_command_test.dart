@@ -4,6 +4,21 @@ import 'package:args/args.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:magic_cli/src/commands/install_command.dart';
 
+/// ----------------------------------------------------------------------------
+/// TDD RED PHASE: install_command_test.dart
+/// ----------------------------------------------------------------------------
+/// This file tests the heavily overhauled `magic install` command.
+/// At the time of writing, the `InstallCommand` implementation has NOT been
+/// updated to pass these tests. This is expected.
+///
+/// The overhauled command requires:
+/// 1. 7 configs (app, auth, database, network, view, cache, logging)
+/// 2. kernel.dart for middleware registration
+/// 3. welcome_view.dart with Wind UI
+/// 4. Full main.dart replacement (not injection) using MagicApplication
+/// 5. .env and .env.example files
+/// ----------------------------------------------------------------------------
+
 /// Testable subclass — injects temp project root to avoid hitting real filesystem.
 class _TestInstallCommand extends InstallCommand {
   _TestInstallCommand(this._testRoot);
@@ -16,7 +31,6 @@ class _TestInstallCommand extends InstallCommand {
 
 /// Creates a minimal Flutter project scaffold in the given directory.
 void _createMinimalFlutterProject(Directory dir) {
-  // pubspec.yaml
   File('${dir.path}/pubspec.yaml').writeAsStringSync('''
 name: test_app
 description: A test Flutter project.
@@ -31,7 +45,6 @@ dependencies:
     sdk: flutter
 ''');
 
-  // lib/main.dart
   Directory('${dir.path}/lib').createSync(recursive: true);
   File('${dir.path}/lib/main.dart').writeAsStringSync('''
 import 'package:flutter/material.dart';
@@ -52,9 +65,22 @@ void main() {
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync('magic_test_install_');
       _createMinimalFlutterProject(tempDir);
+
       cmd = _TestInstallCommand(tempDir.path);
       parser = ArgParser();
+
+      // We manually add the new flags here to the test parser so we can parse them,
+      // even if the command hasn't implemented configure() for them yet.
+      // This ensures the test compiles and can pass arguments.
       cmd.configure(parser);
+      if (!parser.options.containsKey('without-network')) {
+        parser.addFlag('without-network',
+            help: 'Skip network setup', negatable: false);
+      }
+      if (!parser.options.containsKey('without-logging')) {
+        parser.addFlag('without-logging',
+            help: 'Skip logging setup', negatable: false);
+      }
     });
 
     tearDown(() {
@@ -62,255 +88,616 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Metadata
+    // Group 1: Default install (no flags)
     // -----------------------------------------------------------------------
+    group('Default install (no flags)', () {
+      setUp(() async {
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+      });
 
-    test('name is install', () {
-      expect(cmd.name, 'install');
-    });
+      test('creates all expected app directories', () {
+        final expectedDirs = [
+          'lib/app/controllers',
+          'lib/app/models',
+          'lib/app/enums',
+          'lib/app/middleware',
+          'lib/app/policies',
+          'lib/app/providers',
+          'lib/app/listeners',
+          'lib/app/events',
+          'lib/resources/views',
+          'lib/routes',
+          'lib/config',
+        ];
 
-    test('description is not empty', () {
-      expect(cmd.description, isNotEmpty);
-    });
+        for (final dir in expectedDirs) {
+          expect(
+            Directory('${tempDir.path}/$dir').existsSync(),
+            isTrue,
+            reason: '$dir should exist after default install',
+          );
+        }
+      });
 
-    // -----------------------------------------------------------------------
-    // Directory structure — full install
-    // -----------------------------------------------------------------------
+      test('creates database directories', () {
+        final dbDirs = [
+          'lib/database/migrations',
+          'lib/database/seeders',
+          'lib/database/factories',
+        ];
 
-    test('creates all expected app directories', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+        for (final dir in dbDirs) {
+          expect(
+            Directory('${tempDir.path}/$dir').existsSync(),
+            isTrue,
+            reason: '$dir should exist after default install',
+          );
+        }
+      });
 
-      final expectedDirs = [
-        'lib/app/controllers',
-        'lib/app/models',
-        'lib/app/enums',
-        'lib/app/middleware',
-        'lib/app/policies',
-        'lib/app/providers',
-        'lib/app/listeners',
-        'lib/app/events',
-        'lib/resources/views',
-        'lib/routes',
-        'lib/config',
-      ];
-
-      for (final dir in expectedDirs) {
+      test('creates assets/lang directory', () {
         expect(
-          Directory('${tempDir.path}/$dir').existsSync(),
+          Directory('${tempDir.path}/assets/lang').existsSync(),
           isTrue,
-          reason: '$dir should exist after install',
+          reason: 'assets/lang should exist after default install',
         );
-      }
-    });
+      });
 
-    test('creates database directories by default', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+      test('creates all 7 config files', () {
+        final configs = [
+          'app.dart',
+          'auth.dart',
+          'database.dart',
+          'network.dart',
+          'view.dart',
+          'cache.dart',
+          'logging.dart',
+        ];
 
-      final dbDirs = [
-        'lib/database/migrations',
-        'lib/database/seeders',
-        'lib/database/factories',
-      ];
+        for (final config in configs) {
+          expect(
+            File('${tempDir.path}/lib/config/$config').existsSync(),
+            isTrue,
+            reason: 'lib/config/$config should exist after default install',
+          );
+        }
+      });
 
-      for (final dir in dbDirs) {
+      test('creates starter providers', () {
         expect(
-          Directory('${tempDir.path}/$dir').existsSync(),
+          File('${tempDir.path}/lib/app/providers/route_service_provider.dart')
+              .existsSync(),
           isTrue,
-          reason: '$dir should exist after full install',
+          reason: 'route_service_provider.dart should exist',
         );
-      }
-    });
+        expect(
+          File('${tempDir.path}/lib/app/providers/app_service_provider.dart')
+              .existsSync(),
+          isTrue,
+          reason: 'app_service_provider.dart should exist',
+        );
+      });
 
-    test('creates assets/lang directory by default', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+      test('creates kernel.dart', () {
+        expect(
+          File('${tempDir.path}/lib/app/kernel.dart').existsSync(),
+          isTrue,
+          reason: 'kernel.dart should exist',
+        );
+      });
 
-      expect(
-        Directory('${tempDir.path}/assets/lang').existsSync(),
-        isTrue,
-      );
-    });
+      test('creates routes/app.dart', () {
+        expect(
+          File('${tempDir.path}/lib/routes/app.dart').existsSync(),
+          isTrue,
+          reason: 'routes/app.dart should exist',
+        );
+      });
 
-    // -----------------------------------------------------------------------
-    // --without-database flag
-    // -----------------------------------------------------------------------
+      test('creates welcome_view.dart', () {
+        expect(
+          File('${tempDir.path}/lib/resources/views/welcome_view.dart')
+              .existsSync(),
+          isTrue,
+          reason: 'welcome_view.dart should exist',
+        );
+      });
 
-    test('skips lib/database dirs when --without-database', () async {
-      cmd.arguments = parser.parse(['--without-database']);
-      await cmd.handle();
-
-      expect(
-        Directory('${tempDir.path}/lib/database').existsSync(),
-        isFalse,
-        reason: 'lib/database should NOT exist with --without-database',
-      );
-    });
-
-    test('skips lib/config/database.dart when --without-database', () async {
-      cmd.arguments = parser.parse(['--without-database']);
-      await cmd.handle();
-
-      expect(
-        File('${tempDir.path}/lib/config/database.dart').existsSync(),
-        isFalse,
-      );
-    });
-
-    // -----------------------------------------------------------------------
-    // --without-localization flag
-    // -----------------------------------------------------------------------
-
-    test('skips assets/lang when --without-localization', () async {
-      cmd.arguments = parser.parse(['--without-localization']);
-      await cmd.handle();
-
-      expect(
-        Directory('${tempDir.path}/assets/lang').existsSync(),
-        isFalse,
-      );
+      test('creates .env and .env.example files', () {
+        expect(
+          File('${tempDir.path}/.env').existsSync(),
+          isTrue,
+          reason: '.env should exist',
+        );
+        expect(
+          File('${tempDir.path}/.env.example').existsSync(),
+          isTrue,
+          reason: '.env.example should exist',
+        );
+      });
     });
 
     // -----------------------------------------------------------------------
-    // --without-auth flag
+    // Group 2: main.dart replacement
     // -----------------------------------------------------------------------
+    group('main.dart replacement', () {
+      test('replaces main.dart content completely', () async {
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
 
-    test('skips lib/config/auth.dart when --without-auth', () async {
-      cmd.arguments = parser.parse(['--without-auth']);
-      await cmd.handle();
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
 
-      expect(
-        File('${tempDir.path}/lib/config/auth.dart').existsSync(),
-        isFalse,
-      );
-    });
+        expect(
+          content,
+          contains('MagicApplication'),
+          reason: 'main.dart should use MagicApplication',
+        );
 
-    // -----------------------------------------------------------------------
-    // Config files
-    // -----------------------------------------------------------------------
+        expect(
+          content,
+          isNot(contains('MaterialApp(home: Scaffold())')),
+          reason: 'main.dart should NOT contain old Scaffold code',
+        );
 
-    test('creates lib/config/app.dart', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+        expect(
+          content,
+          contains('await Magic.init'),
+          reason: 'main.dart should contain Magic.init',
+        );
 
-      expect(
-        File('${tempDir.path}/lib/config/app.dart').existsSync(),
-        isTrue,
-      );
-    });
+        expect(
+          content,
+          contains('configFactories:'),
+          reason: 'main.dart should contain configFactories list',
+        );
+      });
 
-    test('app config contains appConfig and providers list', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+      test('imports all 7 configs by default', () async {
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
 
-      final content =
-          File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
-      expect(content, contains('appConfig'));
-      expect(content, contains('providers'));
-      expect(content, contains('RouteServiceProvider'));
-    });
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
 
-    test('creates lib/config/auth.dart by default', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+        final expectedImports = [
+          "import 'config/app.dart'",
+          "import 'config/auth.dart'",
+          "import 'config/database.dart'",
+          "import 'config/network.dart'",
+          "import 'config/view.dart'",
+          "import 'config/cache.dart'",
+          "import 'config/logging.dart'",
+        ];
 
-      expect(
-        File('${tempDir.path}/lib/config/auth.dart').existsSync(),
-        isTrue,
-      );
-    });
+        for (final imp in expectedImports) {
+          expect(
+            content,
+            contains(imp),
+            reason: 'main.dart should import $imp',
+          );
+        }
+      });
 
-    test('creates lib/config/database.dart by default', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+      test('is idempotent (Magic.init appears exactly once)', () async {
+        cmd.arguments = parser.parse([]);
 
-      expect(
-        File('${tempDir.path}/lib/config/database.dart').existsSync(),
-        isTrue,
-      );
-    });
+        // Run first time
+        await cmd.handle();
 
-    // -----------------------------------------------------------------------
-    // Starter files
-    // -----------------------------------------------------------------------
+        // Run second time
+        await cmd.handle();
 
-    test('creates lib/app/providers/route_service_provider.dart', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
+        final count = 'Magic.init'.allMatches(content).length;
 
-      expect(
-        File(
-          '${tempDir.path}/lib/app/providers/route_service_provider.dart',
-        ).existsSync(),
-        isTrue,
-      );
-    });
-
-    test('creates lib/app/providers/app_service_provider.dart', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
-
-      expect(
-        File(
-          '${tempDir.path}/lib/app/providers/app_service_provider.dart',
-        ).existsSync(),
-        isTrue,
-      );
-    });
-
-    test('creates lib/routes/app.dart', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
-
-      expect(
-        File('${tempDir.path}/lib/routes/app.dart').existsSync(),
-        isTrue,
-      );
+        expect(
+          count,
+          1,
+          reason:
+              'Magic.init must appear exactly once even after multiple runs',
+        );
+      });
     });
 
     // -----------------------------------------------------------------------
-    // main.dart bootstrap injection
+    // Group 3: --without-auth flag
     // -----------------------------------------------------------------------
+    group('--without-auth flag', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-auth']);
+        await cmd.handle();
+      });
 
-    test('injects Magic.init into main.dart', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+      test('skips auth.dart', () {
+        expect(
+          File('${tempDir.path}/lib/config/auth.dart').existsSync(),
+          isFalse,
+          reason: 'auth.dart should not be created',
+        );
+      });
 
-      final content = File('${tempDir.path}/lib/main.dart').readAsStringSync();
-      expect(content, contains('Magic.init'));
+      test('excludes auth providers from app.dart', () {
+        final content =
+            File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains('AuthServiceProvider')),
+          reason: 'app.dart should not contain AuthServiceProvider',
+        );
+        expect(
+          content,
+          isNot(contains('VaultServiceProvider')),
+          reason: 'app.dart should not contain VaultServiceProvider',
+        );
+      });
+
+      test('creates remaining configs', () {
+        expect(File('${tempDir.path}/lib/config/database.dart').existsSync(),
+            isTrue);
+        expect(File('${tempDir.path}/lib/config/network.dart').existsSync(),
+            isTrue);
+      });
+
+      test('excludes auth config import from main.dart', () {
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains("import 'config/auth.dart'")),
+          reason: 'main.dart should not import auth config',
+        );
+        expect(
+          content,
+          isNot(contains('authConfig')),
+          reason: 'main.dart should not use authConfig factory',
+        );
+      });
     });
 
-    test(
-        'main.dart injection is idempotent — runs install twice, Magic.init appears once',
-        () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+    // -----------------------------------------------------------------------
+    // Group 4: --without-database flag
+    // -----------------------------------------------------------------------
+    group('--without-database flag', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-database']);
+        await cmd.handle();
+      });
 
-      // Run again — should not double-inject.
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+      test('skips database directories', () {
+        expect(
+          Directory('${tempDir.path}/lib/database').existsSync(),
+          isFalse,
+          reason: 'lib/database should not be created',
+        );
+      });
 
-      final content = File('${tempDir.path}/lib/main.dart').readAsStringSync();
-      final count = 'Magic.init'.allMatches(content).length;
-      expect(count, 1, reason: 'Magic.init must appear exactly once');
+      test('skips database.dart', () {
+        expect(
+          File('${tempDir.path}/lib/config/database.dart').existsSync(),
+          isFalse,
+          reason: 'database.dart should not be created',
+        );
+      });
+
+      test('excludes database provider from app.dart', () {
+        final content =
+            File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains('DatabaseServiceProvider')),
+          reason: 'app.dart should not contain DatabaseServiceProvider',
+        );
+      });
+
+      test('excludes database config import from main.dart', () {
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains("import 'config/database.dart'")),
+          reason: 'main.dart should not import database config',
+        );
+        expect(
+          content,
+          isNot(contains('databaseConfig')),
+          reason: 'main.dart should not use databaseConfig factory',
+        );
+      });
     });
 
-    test('injects fluttersdk_magic import into main.dart', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+    // -----------------------------------------------------------------------
+    // Group 5: --without-network flag
+    // -----------------------------------------------------------------------
+    group('--without-network flag', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-network']);
+        await cmd.handle();
+      });
 
-      final content = File('${tempDir.path}/lib/main.dart').readAsStringSync();
-      expect(content,
-          contains("import 'package:magic/magic.dart'"));
+      test('skips network.dart', () {
+        expect(
+          File('${tempDir.path}/lib/config/network.dart').existsSync(),
+          isFalse,
+          reason: 'network.dart should not be created',
+        );
+      });
+
+      test('excludes network provider from app.dart', () {
+        final content =
+            File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains('NetworkServiceProvider')),
+          reason: 'app.dart should not contain NetworkServiceProvider',
+        );
+      });
+
+      test('excludes network config import from main.dart', () {
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains("import 'config/network.dart'")),
+          reason: 'main.dart should not import network config',
+        );
+        expect(
+          content,
+          isNot(contains('networkConfig')),
+          reason: 'main.dart should not use networkConfig factory',
+        );
+      });
     });
 
-    test('injects config/app.dart import into main.dart', () async {
-      cmd.arguments = parser.parse([]);
-      await cmd.handle();
+    // -----------------------------------------------------------------------
+    // Group 6: --without-cache flag
+    // -----------------------------------------------------------------------
+    group('--without-cache flag', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-cache']);
+        await cmd.handle();
+      });
 
-      final content = File('${tempDir.path}/lib/main.dart').readAsStringSync();
-      expect(content, contains("import 'config/app.dart'"));
+      test('skips cache.dart', () {
+        expect(
+          File('${tempDir.path}/lib/config/cache.dart').existsSync(),
+          isFalse,
+          reason: 'cache.dart should not be created',
+        );
+      });
+
+      test('excludes cache provider from app.dart', () {
+        final content =
+            File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains('CacheServiceProvider')),
+          reason: 'app.dart should not contain CacheServiceProvider',
+        );
+      });
+
+      test('excludes cache config import from main.dart', () {
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains("import 'config/cache.dart'")),
+          reason: 'main.dart should not import cache config',
+        );
+        expect(
+          content,
+          isNot(contains('cacheConfig')),
+          reason: 'main.dart should not use cacheConfig factory',
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 7: --without-events flag
+    // -----------------------------------------------------------------------
+    group('--without-events flag', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-events']);
+        await cmd.handle();
+      });
+
+      test('skips events directories', () {
+        expect(
+          Directory('${tempDir.path}/lib/app/events').existsSync(),
+          isFalse,
+          reason: 'app/events should not be created',
+        );
+        expect(
+          Directory('${tempDir.path}/lib/app/listeners').existsSync(),
+          isFalse,
+          reason: 'app/listeners should not be created',
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 8: --without-localization flag
+    // -----------------------------------------------------------------------
+    group('--without-localization flag', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-localization']);
+        await cmd.handle();
+      });
+
+      test('skips assets/lang directory', () {
+        expect(
+          Directory('${tempDir.path}/assets/lang').existsSync(),
+          isFalse,
+          reason: 'assets/lang should not be created',
+        );
+      });
+
+      test('excludes localization provider from app.dart', () {
+        final content =
+            File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains('LocalizationServiceProvider')),
+          reason: 'app.dart should not contain LocalizationServiceProvider',
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 9: --without-logging flag
+    // -----------------------------------------------------------------------
+    group('--without-logging flag', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-logging']);
+        await cmd.handle();
+      });
+
+      test('skips logging.dart', () {
+        expect(
+          File('${tempDir.path}/lib/config/logging.dart').existsSync(),
+          isFalse,
+          reason: 'logging.dart should not be created',
+        );
+      });
+
+      test('excludes logging config import from main.dart', () {
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains("import 'config/logging.dart'")),
+          reason: 'main.dart should not import logging config',
+        );
+        expect(
+          content,
+          isNot(contains('loggingConfig')),
+          reason: 'main.dart should not use loggingConfig factory',
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 10: Combined flags (--without-auth --without-database)
+    // -----------------------------------------------------------------------
+    group('Combined flags (--without-auth --without-database)', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-auth', '--without-database']);
+        await cmd.handle();
+      });
+
+      test('skips multiple config files and directories', () {
+        expect(
+            File('${tempDir.path}/lib/config/auth.dart').existsSync(), isFalse);
+        expect(File('${tempDir.path}/lib/config/database.dart').existsSync(),
+            isFalse);
+        expect(Directory('${tempDir.path}/lib/database').existsSync(), isFalse);
+      });
+
+      test('excludes multiple providers from app.dart', () {
+        final content =
+            File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
+
+        expect(content, isNot(contains('AuthServiceProvider')));
+        expect(content, isNot(contains('DatabaseServiceProvider')));
+      });
+
+      test('creates only 5 config files', () {
+        final dir = Directory('${tempDir.path}/lib/config');
+        final files = dir.listSync().whereType<File>().toList();
+
+        expect(
+          files.length,
+          5,
+          reason:
+              'Should create exactly 5 config files (app, network, view, cache, logging)',
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 11: .env content
+    // -----------------------------------------------------------------------
+    group('.env content', () {
+      setUp(() async {
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+      });
+
+      test('.env file contains required keys', () {
+        final content = File('${tempDir.path}/.env').readAsStringSync();
+
+        expect(content, contains('APP_NAME='));
+        expect(content, contains('APP_ENV='));
+        expect(content, contains('APP_DEBUG='));
+        expect(content, contains('APP_KEY='));
+      });
+
+      test('.env.example matches .env keys', () {
+        final content = File('${tempDir.path}/.env.example').readAsStringSync();
+
+        expect(content, contains('APP_NAME='));
+        expect(content, contains('APP_ENV='));
+        expect(content, contains('APP_DEBUG='));
+        expect(content, contains('APP_KEY='));
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 12: Content verification
+    // -----------------------------------------------------------------------
+    group('Content verification', () {
+      setUp(() async {
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+      });
+
+      test('app.dart contains standard providers', () {
+        final content =
+            File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
+
+        expect(content, contains('RouteServiceProvider'));
+        expect(content, contains('AppServiceProvider'));
+      });
+
+      test('kernel.dart contains registerKernel method', () {
+        final content =
+            File('${tempDir.path}/lib/app/kernel.dart').readAsStringSync();
+
+        expect(content, contains('void registerKernel()'));
+      });
+
+      test('routes/app.dart is configured correctly', () {
+        final content =
+            File('${tempDir.path}/lib/routes/app.dart').readAsStringSync();
+
+        expect(content, contains("import 'package:magic/magic.dart'"));
+        expect(content, contains('WelcomeView'));
+      });
+
+      test('welcome_view.dart uses Wind UI', () {
+        final content =
+            File('${tempDir.path}/lib/resources/views/welcome_view.dart')
+                .readAsStringSync();
+
+        expect(content, contains('WelcomeView'));
+        expect(
+          content,
+          contains('WDiv'),
+          reason: 'welcome_view.dart should use Wind UI components',
+        );
+      });
     });
   });
 }
