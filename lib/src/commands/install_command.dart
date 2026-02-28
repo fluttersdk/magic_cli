@@ -156,7 +156,10 @@ class InstallCommand extends Command {
     ];
 
     if (!withoutEvents) {
-      appDirs.addAll(['lib/app/listeners', 'lib/app/events']);
+      appDirs.addAll([
+        'lib/app/listeners',
+        'lib/app/events',
+      ]);
     }
 
     for (final dir in appDirs) {
@@ -399,6 +402,7 @@ class InstallCommand extends Command {
             .map((w) => w[0].toUpperCase() + w.substring(1))
             .join(' ');
       } catch (_) {
+        // pubspec.yaml unreadable or malformed — fall back to default name.
         return 'My App';
       }
     }
