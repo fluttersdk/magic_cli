@@ -162,4 +162,310 @@ void main() {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // deepMerge()
+  // ---------------------------------------------------------------------------
+  group('JsonEditor.deepMerge()', () {
+    test('merges flat maps with source taking precedence', () {
+      final target = <String, dynamic>{
+        'name': 'App',
+        'version': '1.0',
+      };
+      final source = <String, dynamic>{
+        'version': '2.0',
+        'author': 'Anilcan',
+      };
+
+      final result = JsonEditor.deepMerge(target, source);
+
+      expect(result['name'], equals('App'));
+      expect(result['version'], equals('2.0'));
+      expect(result['author'], equals('Anilcan'));
+    });
+
+    test('recursively merges nested maps', () {
+      final target = <String, dynamic>{
+        'auth': {
+          'login': 'Login',
+          'logout': 'Logout',
+        },
+      };
+      final source = <String, dynamic>{
+        'auth': {
+          'login': 'Sign In',
+          'register': 'Sign Up',
+        },
+      };
+
+      final result = JsonEditor.deepMerge(target, source);
+      final auth = result['auth'] as Map<String, dynamic>;
+
+      expect(auth['login'], equals('Sign In'));
+      expect(auth['logout'], equals('Logout'));
+      expect(auth['register'], equals('Sign Up'));
+    });
+
+    test('handles deeply nested structures (3+ levels)', () {
+      final target = <String, dynamic>{
+        'level1': {
+          'level2': {
+            'existing': 'kept',
+            'overwritten': 'old',
+          },
+        },
+      };
+      final source = <String, dynamic>{
+        'level1': {
+          'level2': {
+            'overwritten': 'new',
+            'added': 'fresh',
+          },
+        },
+      };
+
+      final result = JsonEditor.deepMerge(target, source);
+      final level2 =
+          (result['level1'] as Map<String, dynamic>)['level2']
+              as Map<String, dynamic>;
+
+      expect(level2['existing'], equals('kept'));
+      expect(level2['overwritten'], equals('new'));
+      expect(level2['added'], equals('fresh'));
+    });
+
+    test('source overwrites target when types differ (map vs scalar)', () {
+      final target = <String, dynamic>{
+        'auth': {
+          'login': 'Login',
+        },
+      };
+      final source = <String, dynamic>{
+        'auth': 'disabled',
+      };
+
+      final result = JsonEditor.deepMerge(target, source);
+
+      expect(result['auth'], equals('disabled'));
+    });
+
+    test('does not mutate input maps', () {
+      final target = <String, dynamic>{
+        'key': 'original',
+        'nested': {'a': 1},
+      };
+      final source = <String, dynamic>{
+        'key': 'changed',
+        'nested': {'b': 2},
+      };
+
+      JsonEditor.deepMerge(target, source);
+
+      expect(target['key'], equals('original'));
+      expect(
+        (target['nested'] as Map<String, dynamic>).containsKey('b'),
+        isFalse,
+      );
+    });
+
+    test('returns empty map when both inputs are empty', () {
+      final result = JsonEditor.deepMerge(
+        <String, dynamic>{},
+        <String, dynamic>{},
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('returns source content when target is empty', () {
+      final source = <String, dynamic>{
+        'auth': {
+          'login': 'Login',
+        },
+      };
+
+      final result = JsonEditor.deepMerge(<String, dynamic>{}, source);
+
+      expect(result['auth'], isNotNull);
+      expect(
+        (result['auth'] as Map<String, dynamic>)['login'],
+        equals('Login'),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // mergeJsonFile()
+  // ---------------------------------------------------------------------------
+  group('JsonEditor.mergeJsonFile()', () {
+    test('writes source as-is when target does not exist', () {
+      final sourcePath = '${tempDir.path}/source.json';
+      final targetPath = '${tempDir.path}/target.json';
+
+      JsonEditor.writeJson(sourcePath, {
+        'auth': {'login': 'Sign In'},
+      });
+
+      JsonEditor.mergeJsonFile(targetPath, sourcePath);
+
+      final result = JsonEditor.readJson(targetPath);
+      expect(
+        (result['auth'] as Map<String, dynamic>)['login'],
+        equals('Sign In'),
+      );
+    });
+
+    test('deep-merges into existing target file', () {
+      final sourcePath = '${tempDir.path}/source.json';
+      final targetPath = '${tempDir.path}/target.json';
+
+      // Target has customised login text + extra key.
+      JsonEditor.writeJson(targetPath, {
+        'auth': {
+          'login': 'My Custom Login',
+          'custom_key': 'user value',
+        },
+      });
+
+      // Source adds register key + overwrites login.
+      JsonEditor.writeJson(sourcePath, {
+        'auth': {
+          'login': 'Sign In',
+          'register': 'Sign Up',
+        },
+      });
+
+      JsonEditor.mergeJsonFile(targetPath, sourcePath);
+
+      final result = JsonEditor.readJson(targetPath);
+      final auth = result['auth'] as Map<String, dynamic>;
+
+      // Source wins on conflict.
+      expect(auth['login'], equals('Sign In'));
+      // Existing extra key preserved.
+      expect(auth['custom_key'], equals('user value'));
+      // New key added.
+      expect(auth['register'], equals('Sign Up'));
+    });
+
+    test('force mode overwrites target entirely', () {
+      final sourcePath = '${tempDir.path}/source.json';
+      final targetPath = '${tempDir.path}/target.json';
+
+      JsonEditor.writeJson(targetPath, {
+        'auth': {'login': 'Custom'},
+        'extra': 'preserved normally',
+      });
+
+      JsonEditor.writeJson(sourcePath, {
+        'auth': {'login': 'Sign In'},
+      });
+
+      JsonEditor.mergeJsonFile(targetPath, sourcePath, force: true);
+
+      final result = JsonEditor.readJson(targetPath);
+
+      expect(
+        (result['auth'] as Map<String, dynamic>)['login'],
+        equals('Sign In'),
+      );
+      // Extra key is gone — force overwrites entirely.
+      expect(result.containsKey('extra'), isFalse);
+    });
+
+    test('throws when source file does not exist', () {
+      expect(
+        () => JsonEditor.mergeJsonFile(
+          '${tempDir.path}/target.json',
+          '${tempDir.path}/missing_source.json',
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+    });
+
+    test('is idempotent — running twice produces same result', () {
+      final sourcePath = '${tempDir.path}/source.json';
+      final targetPath = '${tempDir.path}/target.json';
+
+      JsonEditor.writeJson(targetPath, {
+        'existing': 'value',
+      });
+
+      JsonEditor.writeJson(sourcePath, {
+        'existing': 'value',
+        'new_key': 'added',
+      });
+
+      JsonEditor.mergeJsonFile(targetPath, sourcePath);
+      final firstRun = JsonEditor.readJson(targetPath);
+
+      JsonEditor.mergeJsonFile(targetPath, sourcePath);
+      final secondRun = JsonEditor.readJson(targetPath);
+
+      expect(
+        jsonEncode(firstRun),
+        equals(jsonEncode(secondRun)),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // mergeJsonData()
+  // ---------------------------------------------------------------------------
+  group('JsonEditor.mergeJsonData()', () {
+    test('writes data as-is when target does not exist', () {
+      final targetPath = '${tempDir.path}/new_target.json';
+
+      JsonEditor.mergeJsonData(targetPath, {
+        'key': 'value',
+      });
+
+      final result = JsonEditor.readJson(targetPath);
+      expect(result['key'], equals('value'));
+    });
+
+    test('deep-merges in-memory data into existing file', () {
+      final targetPath = '${tempDir.path}/target.json';
+
+      JsonEditor.writeJson(targetPath, {
+        'auth': {
+          'login': 'Custom Login',
+          'extra': 'kept',
+        },
+      });
+
+      JsonEditor.mergeJsonData(targetPath, {
+        'auth': {
+          'login': 'Sign In',
+          'register': 'Sign Up',
+        },
+      });
+
+      final result = JsonEditor.readJson(targetPath);
+      final auth = result['auth'] as Map<String, dynamic>;
+
+      expect(auth['login'], equals('Sign In'));
+      expect(auth['extra'], equals('kept'));
+      expect(auth['register'], equals('Sign Up'));
+    });
+
+    test('force mode overwrites target entirely', () {
+      final targetPath = '${tempDir.path}/target.json';
+
+      JsonEditor.writeJson(targetPath, {
+        'old': 'data',
+      });
+
+      JsonEditor.mergeJsonData(
+        targetPath,
+        {'new': 'data'},
+        force: true,
+      );
+
+      final result = JsonEditor.readJson(targetPath);
+
+      expect(result.containsKey('old'), isFalse);
+      expect(result['new'], equals('data'));
+    });
+  });
 }

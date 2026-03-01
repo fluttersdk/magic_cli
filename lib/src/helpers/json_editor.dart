@@ -15,6 +15,12 @@ import 'dart:io';
 /// // Merge a single key (idempotent overwrite)
 /// JsonEditor.mergeKey('/path/to/manifest.json', 'gcm_sender_id', '482941778795');
 ///
+/// // Deep-merge two maps (nested translation files, configs, etc.)
+/// final merged = JsonEditor.deepMerge(existing, incoming);
+///
+/// // Merge an incoming JSON file into an existing one (idempotent)
+/// JsonEditor.mergeJsonFile('/app/assets/lang/en.json', '/stubs/en.json');
+///
 /// // Write a full map
 /// JsonEditor.writeJson('/path/to/output.json', {'key': 'value'});
 ///
@@ -100,6 +106,133 @@ class JsonEditor {
 
     // 3. Persist.
     writeJson(path, data);
+  }
+
+  /// Deep-merge [source] into [target], returning a new map.
+  ///
+  /// When both [target] and [source] contain the same key and both values
+  /// are `Map<String, dynamic>`, the merge recurses into that key. Otherwise
+  /// the [source] value wins (overwrite semantics).
+  ///
+  /// Neither [target] nor [source] are mutated — a fresh map is returned.
+  ///
+  /// ### Example
+  ///
+  /// ```dart
+  /// final target = {'auth': {'login': 'Login', 'logout': 'Logout'}};
+  /// final source = {'auth': {'login': 'Sign In', 'register': 'Sign Up'}};
+  /// final result = JsonEditor.deepMerge(target, source);
+  /// // {'auth': {'login': 'Sign In', 'logout': 'Logout', 'register': 'Sign Up'}}
+  /// ```
+  ///
+  /// @param target  The base map (existing data).
+  /// @param source  The incoming map whose values take precedence.
+  /// @return A new [Map<String, dynamic>] containing the merged result.
+  static Map<String, dynamic> deepMerge(
+    Map<String, dynamic> target,
+    Map<String, dynamic> source,
+  ) {
+    final Map<String, dynamic> result = Map<String, dynamic>.from(target);
+
+    for (final entry in source.entries) {
+      final existing = result[entry.key];
+
+      // Both sides are maps → recurse.
+      if (existing is Map<String, dynamic> &&
+          entry.value is Map<String, dynamic>) {
+        result[entry.key] = deepMerge(
+          existing,
+          entry.value as Map<String, dynamic>,
+        );
+      } else {
+        // Source wins — overwrite or add.
+        result[entry.key] = entry.value;
+      }
+    }
+
+    return result;
+  }
+
+  /// Merge an incoming JSON file into an existing target JSON file.
+  ///
+  /// If the [targetPath] file does not exist, the [sourcePath] content is
+  /// written as-is. If the target already exists, a recursive deep-merge
+  /// is performed — existing keys the user may have customised are preserved
+  /// while new keys from [sourcePath] are added.
+  ///
+  /// When [force] is `true`, the [sourcePath] content overwrites [targetPath]
+  /// entirely — no merge is performed.
+  ///
+  /// ### Example
+  ///
+  /// ```dart
+  /// // Merge plugin translations into host app (idempotent)
+  /// JsonEditor.mergeJsonFile(
+  ///   '/app/assets/lang/en.json',
+  ///   '/stubs/en.json',
+  /// );
+  ///
+  /// // Force-overwrite with stub content
+  /// JsonEditor.mergeJsonFile(
+  ///   '/app/assets/lang/en.json',
+  ///   '/stubs/en.json',
+  ///   force: true,
+  /// );
+  /// ```
+  ///
+  /// @param targetPath  The destination JSON file (host app's file).
+  /// @param sourcePath  The incoming JSON file (stub / plugin file).
+  /// @param force       When `true`, skip merge and overwrite entirely.
+  ///
+  /// @throws [FileSystemException] if [sourcePath] does not exist.
+  /// @throws [FormatException]     if either file contains invalid JSON.
+  static void mergeJsonFile(
+    String targetPath,
+    String sourcePath, {
+    bool force = false,
+  }) {
+    final sourceData = readJson(sourcePath);
+    final targetFile = File(targetPath);
+
+    // 1. Force mode or target missing → write source as-is.
+    if (force || !targetFile.existsSync()) {
+      writeJson(targetPath, sourceData);
+      return;
+    }
+
+    // 2. Deep-merge source into existing target.
+    final targetData = readJson(targetPath);
+    final merged = deepMerge(targetData, sourceData);
+
+    writeJson(targetPath, merged);
+  }
+
+  /// Merge an in-memory [sourceData] map into an existing JSON file.
+  ///
+  /// Convenience variant of [mergeJsonFile] when the source content is
+  /// already loaded (e.g. from a stub string rather than a file on disk).
+  ///
+  /// @param targetPath  The destination JSON file.
+  /// @param sourceData  The incoming map to merge.
+  /// @param force       When `true`, skip merge and overwrite entirely.
+  static void mergeJsonData(
+    String targetPath,
+    Map<String, dynamic> sourceData, {
+    bool force = false,
+  }) {
+    final targetFile = File(targetPath);
+
+    // 1. Force mode or target missing → write source as-is.
+    if (force || !targetFile.existsSync()) {
+      writeJson(targetPath, sourceData);
+      return;
+    }
+
+    // 2. Deep-merge source into existing target.
+    final targetData = readJson(targetPath);
+    final merged = deepMerge(targetData, sourceData);
+
+    writeJson(targetPath, merged);
   }
 
   // -------------------------------------------------------------------------
