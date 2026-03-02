@@ -211,25 +211,39 @@ class InstallCommand extends Command {
   }) {
     final providerImports = <String>[];
     final providerEntries = <String>[];
+    final authProviderEntries = <String>[];
 
-    // Launch is always registered — the welcome view uses Launch.url().
-    providerEntries.add('(app) => LaunchServiceProvider(app),');
-
-    if (!withoutAuth) {
-      providerEntries.add('(app) => AuthServiceProvider(app),');
-      providerEntries.add('(app) => VaultServiceProvider(app),');
+    // Infrastructure providers — order matters:
+    // 1. Cache, Database, Network, Vault must boot before Auth.
+    // 2. AppServiceProvider registers userFactory (setUserFactory),
+    //    so it MUST boot before AuthServiceProvider.
+    // 3. AuthServiceProvider calls Auth.restore() which needs the
+    //    user factory and network driver to be ready.
+    if (!withoutCache) {
+      providerEntries.add('(app) => CacheServiceProvider(app),');
     }
     if (!withoutDatabase) {
       providerEntries.add('(app) => DatabaseServiceProvider(app),');
     }
+
+    // Launch is always registered — the welcome view uses Launch.url().
+    providerEntries.add('(app) => LaunchServiceProvider(app),');
+
+    if (!withoutLocalization) {
+      providerEntries.add('(app) => LocalizationServiceProvider(app),');
+    }
     if (!withoutNetwork) {
       providerEntries.add('(app) => NetworkServiceProvider(app),');
     }
-    if (!withoutCache) {
-      providerEntries.add('(app) => CacheServiceProvider(app),');
+    if (!withoutAuth) {
+      providerEntries.add('(app) => VaultServiceProvider(app),');
     }
-    if (!withoutLocalization) {
-      providerEntries.add('(app) => LocalizationServiceProvider(app),');
+
+    // Auth providers boot AFTER AppServiceProvider (which registers
+    // userFactory via setUserFactory). AuthServiceProvider.boot()
+    // calls Auth.restore() which requires the factory.
+    if (!withoutAuth) {
+      authProviderEntries.add('(app) => AuthServiceProvider(app),');
     }
 
     _writeIfNotExists(
@@ -237,6 +251,7 @@ class InstallCommand extends Command {
       InstallStubs.appConfigContent(
         providerImports: providerImports,
         providerEntries: providerEntries,
+        authProviderEntries: authProviderEntries,
       ),
     );
 

@@ -52,11 +52,14 @@ class InstallStubs {
   ///
   /// [providerImports] — additional provider import statements beyond the
   ///   always-present `RouteServiceProvider` and `AppServiceProvider`.
-  /// [providerEntries] — additional `(app) => Provider(app),` strings beyond
-  ///   the always-present Route and App providers.
+  /// [providerEntries] — infrastructure `(app) => Provider(app),` strings.
+  ///   These boot BEFORE AppServiceProvider and AuthServiceProvider.
+  /// [authProviderEntries] — auth-related providers that must boot AFTER
+  ///   AppServiceProvider (which registers `setUserFactory`).
   static String appConfigContent({
     required List<String> providerImports,
     required List<String> providerEntries,
+    List<String> authProviderEntries = const [],
   }) {
     final allImports = [
       "import 'package:magic/magic.dart';",
@@ -65,10 +68,16 @@ class InstallStubs {
       ...providerImports,
     ].join('\n');
 
+    // Boot order matters:
+    // 1. RouteServiceProvider — routes
+    // 2. Infrastructure providers — cache, database, network, vault, etc.
+    // 3. AppServiceProvider — registers userFactory via setUserFactory()
+    // 4. AuthServiceProvider — calls Auth.restore() (needs userFactory)
     final allProviders = [
       '      (app) => RouteServiceProvider(app),',
       ...providerEntries.map((e) => '      $e'),
       '      (app) => AppServiceProvider(app),',
+      ...authProviderEntries.map((e) => '      $e'),
     ].join('\n');
 
     return StubLoader.replace(
