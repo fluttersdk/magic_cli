@@ -111,8 +111,16 @@ class JsonEditor {
   /// Deep-merge [source] into [target], returning a new map.
   ///
   /// When both [target] and [source] contain the same key and both values
-  /// are `Map<String, dynamic>`, the merge recurses into that key. Otherwise
-  /// the [source] value wins (overwrite semantics).
+  /// are `Map<String, dynamic>`, the merge recurses into that key.
+  ///
+  /// Merge strategy is controlled by [additive]:
+  ///
+  /// - `false` (default) — **source wins**: when a leaf key exists in both
+  ///   maps, the [source] value overwrites the [target] value.
+  /// - `true` — **target wins**: existing leaf values are preserved; only
+  ///   keys missing from [target] are added from [source]. Use this mode
+  ///   when merging plugin defaults into user-customised files (e.g.
+  ///   translation stubs into host app translations).
   ///
   /// Neither [target] nor [source] are mutated — a fresh map is returned.
   ///
@@ -121,17 +129,26 @@ class JsonEditor {
   /// ```dart
   /// final target = {'auth': {'login': 'Login', 'logout': 'Logout'}};
   /// final source = {'auth': {'login': 'Sign In', 'register': 'Sign Up'}};
+  ///
+  /// // Default (source wins):
   /// final result = JsonEditor.deepMerge(target, source);
   /// // {'auth': {'login': 'Sign In', 'logout': 'Logout', 'register': 'Sign Up'}}
+  ///
+  /// // Additive (target wins):
+  /// final additive = JsonEditor.deepMerge(target, source, additive: true);
+  /// // {'auth': {'login': 'Login', 'logout': 'Logout', 'register': 'Sign Up'}}
   /// ```
   ///
-  /// @param target  The base map (existing data).
-  /// @param source  The incoming map whose values take precedence.
+  /// @param target    The base map (existing data).
+  /// @param source    The incoming map.
+  /// @param additive  When `true`, existing leaf values in [target] are
+  ///                  preserved and only missing keys are added.
   /// @return A new [Map<String, dynamic>] containing the merged result.
   static Map<String, dynamic> deepMerge(
     Map<String, dynamic> target,
-    Map<String, dynamic> source,
-  ) {
+    Map<String, dynamic> source, {
+    bool additive = false,
+  }) {
     final Map<String, dynamic> result = Map<String, dynamic>.from(target);
 
     for (final entry in source.entries) {
@@ -143,7 +160,11 @@ class JsonEditor {
         result[entry.key] = deepMerge(
           existing,
           entry.value as Map<String, dynamic>,
+          additive: additive,
         );
+      } else if (additive && result.containsKey(entry.key)) {
+        // Additive mode — preserve existing leaf value, skip overwrite.
+        continue;
       } else {
         // Source wins — overwrite or add.
         result[entry.key] = entry.value;
@@ -157,8 +178,15 @@ class JsonEditor {
   ///
   /// If the [targetPath] file does not exist, the [sourcePath] content is
   /// written as-is. If the target already exists, a recursive deep-merge
-  /// is performed — existing keys the user may have customised are preserved
-  /// while new keys from [sourcePath] are added.
+  /// is performed.
+  ///
+  /// When [additive] is `true` (the default), existing leaf values in the
+  /// target are preserved — only missing keys are added from the source.
+  /// This is the safe default for merging plugin stubs into user-customised
+  /// files (e.g. translation files).
+  ///
+  /// When [additive] is `false`, the source value wins on leaf conflicts
+  /// (overwrite semantics).
   ///
   /// When [force] is `true`, the [sourcePath] content overwrites [targetPath]
   /// entirely — no merge is performed.
@@ -166,7 +194,7 @@ class JsonEditor {
   /// ### Example
   ///
   /// ```dart
-  /// // Merge plugin translations into host app (idempotent)
+  /// // Merge plugin translations into host app (additive — preserves user values)
   /// JsonEditor.mergeJsonFile(
   ///   '/app/assets/lang/en.json',
   ///   '/stubs/en.json',
@@ -182,6 +210,7 @@ class JsonEditor {
   ///
   /// @param targetPath  The destination JSON file (host app's file).
   /// @param sourcePath  The incoming JSON file (stub / plugin file).
+  /// @param additive    When `true` (default), existing values are preserved.
   /// @param force       When `true`, skip merge and overwrite entirely.
   ///
   /// @throws [FileSystemException] if [sourcePath] does not exist.
@@ -189,6 +218,7 @@ class JsonEditor {
   static void mergeJsonFile(
     String targetPath,
     String sourcePath, {
+    bool additive = true,
     bool force = false,
   }) {
     final sourceData = readJson(sourcePath);
@@ -202,7 +232,7 @@ class JsonEditor {
 
     // 2. Deep-merge source into existing target.
     final targetData = readJson(targetPath);
-    final merged = deepMerge(targetData, sourceData);
+    final merged = deepMerge(targetData, sourceData, additive: additive);
 
     writeJson(targetPath, merged);
   }
@@ -214,10 +244,12 @@ class JsonEditor {
   ///
   /// @param targetPath  The destination JSON file.
   /// @param sourceData  The incoming map to merge.
+  /// @param additive    When `true` (default), existing values are preserved.
   /// @param force       When `true`, skip merge and overwrite entirely.
   static void mergeJsonData(
     String targetPath,
     Map<String, dynamic> sourceData, {
+    bool additive = true,
     bool force = false,
   }) {
     final targetFile = File(targetPath);
@@ -230,7 +262,7 @@ class JsonEditor {
 
     // 2. Deep-merge source into existing target.
     final targetData = readJson(targetPath);
-    final merged = deepMerge(targetData, sourceData);
+    final merged = deepMerge(targetData, sourceData, additive: additive);
 
     writeJson(targetPath, merged);
   }

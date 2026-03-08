@@ -125,6 +125,7 @@ class InstallCommand extends Command {
       withoutLogging: withoutLogging,
     );
 
+    _patchDefaultWidgetTest(root);
     _createEnvFiles(root);
 
     _registerEnvAsset(root);
@@ -392,6 +393,36 @@ class InstallCommand extends Command {
         configImports: configImports,
         configFactories: configFactories,
       ),
+    );
+  }
+
+  /// Replaces Flutter's default counter widget test when it still references
+  /// `MyApp`, which is removed by Magic bootstrap generation.
+  ///
+  /// The patch is conservative and idempotent: it only rewrites
+  /// `test/widget_test.dart` when it matches the default template markers.
+  /// Custom tests are never modified.
+  ///
+  /// [root] — absolute path to the Flutter project root.
+  void _patchDefaultWidgetTest(String root) {
+    final widgetTestPath = path.join(root, 'test/widget_test.dart');
+
+    if (!FileHelper.fileExists(widgetTestPath)) {
+      return;
+    }
+
+    final existingContent = FileHelper.readFile(widgetTestPath);
+    final isDefaultCounterTest =
+        existingContent.contains('Counter increments smoke test') &&
+            existingContent.contains('const MyApp()');
+
+    if (!isDefaultCounterTest) {
+      return;
+    }
+
+    FileHelper.writeFile(
+      widgetTestPath,
+      InstallStubs.widgetTestContent(),
     );
   }
 

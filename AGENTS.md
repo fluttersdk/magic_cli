@@ -9,32 +9,32 @@ magic_cli/
 ├── bin/magic.dart             # Entry point
 ├── lib/src/
 │   ├── commands/              # 16 command files (one per command)
-│   ├── mcp/                   # MCP server tools and handlers
-│   └── stub_loader.dart       # Template engine with case transforms
-└── assets/stubs/              # .stub template files
+│   ├── console/               # Console style utilities, command base
+│   ├── helpers/               # File helpers, config editor
+│   └── stubs/                 # StubLoader — template engine with case transforms
+└── assets/stubs/              # .stub template files (31 templates)
 ```
 
 ## COMMANDS
 
 | Command | Description |
 |---------|-------------|
-| `magic init` | Initialize project (--without-database, --without-events) |
-| `magic key:generate` | Generate app key |
-| `magic make:model Name` | Create model (-mcf for migration+controller+factory) |
-| `magic make:controller Name` | Create controller |
-| `magic make:view Name` | Create view class |
+| `magic install` | Initialize project (--without-database, --without-events, --without-auth, --without-cache, --without-localization) |
+| `magic key:generate` | Generate app encryption key → updates `.env` |
+| `magic make:model Name` | Create model (-mcf for migration+controller+factory, -s for seeder, -a for all) |
+| `magic make:controller Name` | Create controller (-r for resource with CRUD, -m for model binding) |
+| `magic make:view Name` | Create view class (stateful option available) |
 | `magic make:policy Name` | Create authorization policy |
-| `magic make:migration create_X_table` | Create migration |
-| `magic make:seeder Name` | Create seeder |
-| `magic make:factory Name` | Create factory |
-| `magic make:provider Name` | Create service provider |
-| `magic make:lang code` | Create language file |
-| `magic route:list` | List all routes |
-| `magic config:list` | List config keys |
-| `magic config:get key` | Get config value |
-| `magic boost:install` | Set up MCP integration |
-| `magic boost:mcp` | Run MCP server |
-| `magic boost:update` | Update AI context files |
+| `magic make:migration create_X_table` | Create timestamped migration |
+| `magic make:seeder Name` | Create seeder (auto-appends Seeder suffix) |
+| `magic make:factory Name` | Create factory (auto-appends Factory suffix) |
+| `magic make:provider Name` | Create service provider (auto-appends ServiceProvider suffix) |
+| `magic make:lang code` | Create language JSON file in `assets/lang/` |
+| `magic make:enum Name` | Create string-backed enum with value/label and selectOptions |
+| `magic make:event Name` | Create MagicEvent subclass |
+| `magic make:listener Name` | Create MagicListener with event binding |
+| `magic make:middleware Name` | Create middleware class |
+| `magic make:request Name` | Create form request with validation rules (auto-appends Request suffix) |
 
 ## CODE GENERATION
 
@@ -55,29 +55,18 @@ Placeholders:
 
 ## CONFIG EDITOR
 
-`magic init` and `make:provider` programmatically modify `pubspec.yaml` and target config files:
+`magic install` and `make:provider` programmatically modify `pubspec.yaml` and target config files:
 
 - Parses `pubspec.yaml` with `yaml` package, writes back with `yaml_writer`.
 - Injects `import` statements at the top of `lib/config/app.dart`.
 - Appends provider factory lambdas into the `providers` list inside the config map.
 - Never overwrites existing entries — checks for duplicates before writing.
 
-## MCP INTEGRATION
-
-Three commands manage AI tooling:
-
-| Command | Action |
-|---------|--------|
-| `boost:install` | Writes `.mcp.json` config, registers magic CLI as an MCP server |
-| `boost:mcp` | Starts the MCP server (stdio transport); used by AI clients |
-| `boost:update` | Regenerates `AGENTS.md` files from current project state |
-
-MCP tools live in `lib/src/mcp/`. Each tool maps to a Magic Framework concept (models, routes, config) and returns structured JSON to the AI client.
 
 ## GOTCHAS
-
 1. Run commands from the Flutter project root — file paths resolve relative to `pubspec.yaml`.
 2. `make:model -mcf` generates three files; if any stub fails, the others still write — no rollback.
-3. `boost:update` overwrites existing `AGENTS.md` files — commit before running.
-4. `magic init --without-database` skips SQLite config but still writes `config/database.dart` as a stub.
+3. Command is `install`, not `init` — `magic install` initializes the project.
+4. `magic install --without-database` skips SQLite config but still writes `config/database.dart` as a stub.
 5. Language codes for `make:lang` must match the asset path convention (`assets/lang/{code}.json`).
+6. Auto-suffix commands (`make:factory`, `make:provider`, `make:seeder`, `make:request`) — passing `UserFactory` or `User` both work.

@@ -225,9 +225,8 @@ void main() {
       };
 
       final result = JsonEditor.deepMerge(target, source);
-      final level2 =
-          (result['level1'] as Map<String, dynamic>)['level2']
-              as Map<String, dynamic>;
+      final level2 = (result['level1'] as Map<String, dynamic>)['level2']
+          as Map<String, dynamic>;
 
       expect(level2['existing'], equals('kept'));
       expect(level2['overwritten'], equals('new'));
@@ -292,6 +291,107 @@ void main() {
         equals('Login'),
       );
     });
+
+    test('additive mode preserves existing leaf values', () {
+      final target = <String, dynamic>{
+        'app': {'name': 'UPTIZM'},
+        'auth': {
+          'login_title': 'Welcome to Uptizm',
+          'logout': 'Logout',
+        },
+      };
+      final source = <String, dynamic>{
+        'app': {'name': 'My App'},
+        'auth': {
+          'login_title': 'Sign In',
+          'register_title': 'Create Account',
+        },
+      };
+
+      final result = JsonEditor.deepMerge(
+        target,
+        source,
+        additive: true,
+      );
+
+      // 1. Existing leaf values preserved (target wins).
+      expect(
+        (result['app'] as Map<String, dynamic>)['name'],
+        equals('UPTIZM'),
+      );
+      expect(
+        (result['auth'] as Map<String, dynamic>)['login_title'],
+        equals('Welcome to Uptizm'),
+      );
+      // 2. Existing keys not in source still present.
+      expect(
+        (result['auth'] as Map<String, dynamic>)['logout'],
+        equals('Logout'),
+      );
+      // 3. New keys from source added.
+      expect(
+        (result['auth'] as Map<String, dynamic>)['register_title'],
+        equals('Create Account'),
+      );
+    });
+
+    test('additive mode recurses into nested maps', () {
+      final target = <String, dynamic>{
+        'level1': {
+          'level2': {
+            'existing': 'kept',
+            'customised': 'user value',
+          },
+        },
+      };
+      final source = <String, dynamic>{
+        'level1': {
+          'level2': {
+            'customised': 'default value',
+            'added': 'new',
+          },
+        },
+      };
+
+      final result = JsonEditor.deepMerge(
+        target,
+        source,
+        additive: true,
+      );
+      final level2 = (result['level1'] as Map<String, dynamic>)['level2']
+          as Map<String, dynamic>;
+
+      expect(level2['existing'], equals('kept'));
+      expect(level2['customised'], equals('user value'));
+      expect(level2['added'], equals('new'));
+    });
+
+    test('additive mode adds top-level keys missing from target', () {
+      final target = <String, dynamic>{
+        'auth': {'login': 'Login'},
+      };
+      final source = <String, dynamic>{
+        'auth': {'login': 'Sign In'},
+        'errors': {'unexpected': 'Oops'},
+      };
+
+      final result = JsonEditor.deepMerge(
+        target,
+        source,
+        additive: true,
+      );
+
+      // Existing leaf preserved.
+      expect(
+        (result['auth'] as Map<String, dynamic>)['login'],
+        equals('Login'),
+      );
+      // New top-level key added.
+      expect(
+        (result['errors'] as Map<String, dynamic>)['unexpected'],
+        equals('Oops'),
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -315,7 +415,7 @@ void main() {
       );
     });
 
-    test('deep-merges into existing target file', () {
+    test('additive deep-merges preserving existing values', () {
       final sourcePath = '${tempDir.path}/source.json';
       final targetPath = '${tempDir.path}/target.json';
 
@@ -327,7 +427,7 @@ void main() {
         },
       });
 
-      // Source adds register key + overwrites login.
+      // Source has default login + new register key.
       JsonEditor.writeJson(sourcePath, {
         'auth': {
           'login': 'Sign In',
@@ -335,12 +435,48 @@ void main() {
         },
       });
 
+      // Default additive mode — target wins on existing leaves.
       JsonEditor.mergeJsonFile(targetPath, sourcePath);
 
       final result = JsonEditor.readJson(targetPath);
       final auth = result['auth'] as Map<String, dynamic>;
 
-      // Source wins on conflict.
+      // Target wins — customised value preserved.
+      expect(auth['login'], equals('My Custom Login'));
+      // Existing extra key preserved.
+      expect(auth['custom_key'], equals('user value'));
+      // New key added from source.
+      expect(auth['register'], equals('Sign Up'));
+    });
+
+    test('non-additive merge overwrites existing leaf values', () {
+      final sourcePath = '${tempDir.path}/source.json';
+      final targetPath = '${tempDir.path}/target.json';
+
+      JsonEditor.writeJson(targetPath, {
+        'auth': {
+          'login': 'My Custom Login',
+          'custom_key': 'user value',
+        },
+      });
+
+      JsonEditor.writeJson(sourcePath, {
+        'auth': {
+          'login': 'Sign In',
+          'register': 'Sign Up',
+        },
+      });
+
+      JsonEditor.mergeJsonFile(
+        targetPath,
+        sourcePath,
+        additive: false,
+      );
+
+      final result = JsonEditor.readJson(targetPath);
+      final auth = result['auth'] as Map<String, dynamic>;
+
+      // Source wins on conflict (non-additive).
       expect(auth['login'], equals('Sign In'));
       // Existing extra key preserved.
       expect(auth['custom_key'], equals('user value'));
@@ -424,7 +560,7 @@ void main() {
       expect(result['key'], equals('value'));
     });
 
-    test('deep-merges in-memory data into existing file', () {
+    test('additive deep-merges preserving existing values', () {
       final targetPath = '${tempDir.path}/target.json';
 
       JsonEditor.writeJson(targetPath, {
@@ -434,6 +570,7 @@ void main() {
         },
       });
 
+      // Default additive mode — target wins on existing leaves.
       JsonEditor.mergeJsonData(targetPath, {
         'auth': {
           'login': 'Sign In',
@@ -444,6 +581,38 @@ void main() {
       final result = JsonEditor.readJson(targetPath);
       final auth = result['auth'] as Map<String, dynamic>;
 
+      // Target wins — customised value preserved.
+      expect(auth['login'], equals('Custom Login'));
+      expect(auth['extra'], equals('kept'));
+      // New key added from source.
+      expect(auth['register'], equals('Sign Up'));
+    });
+
+    test('non-additive merge overwrites existing leaf values', () {
+      final targetPath = '${tempDir.path}/target.json';
+
+      JsonEditor.writeJson(targetPath, {
+        'auth': {
+          'login': 'Custom Login',
+          'extra': 'kept',
+        },
+      });
+
+      JsonEditor.mergeJsonData(
+        targetPath,
+        {
+          'auth': {
+            'login': 'Sign In',
+            'register': 'Sign Up',
+          },
+        },
+        additive: false,
+      );
+
+      final result = JsonEditor.readJson(targetPath);
+      final auth = result['auth'] as Map<String, dynamic>;
+
+      // Source wins on conflict (non-additive).
       expect(auth['login'], equals('Sign In'));
       expect(auth['extra'], equals('kept'));
       expect(auth['register'], equals('Sign Up'));

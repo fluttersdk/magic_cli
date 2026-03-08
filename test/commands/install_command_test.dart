@@ -256,6 +256,69 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
+    // Group 1.1: widget_test.dart compatibility patch
+    // -----------------------------------------------------------------------
+    group('widget_test.dart compatibility patch', () {
+      test('replaces Flutter default MyApp test with Magic smoke test',
+          () async {
+        final widgetTestFile = File('${tempDir.path}/test/widget_test.dart');
+        widgetTestFile.parent.createSync(recursive: true);
+        widgetTestFile.writeAsStringSync('''
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:test_app/main.dart';
+
+void main() {
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    expect(find.text('0'), findsOneWidget);
+  });
+}
+''');
+
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+
+        final patchedContent = widgetTestFile.readAsStringSync();
+        expect(
+          patchedContent,
+          contains('Magic app boots smoke test'),
+        );
+        expect(
+          patchedContent,
+          contains('MagicApplication'),
+        );
+        expect(
+          patchedContent,
+          isNot(contains('const MyApp()')),
+        );
+      });
+
+      test('does not overwrite customized widget tests', () async {
+        final widgetTestFile = File('${tempDir.path}/test/widget_test.dart');
+        widgetTestFile.parent.createSync(recursive: true);
+        widgetTestFile.writeAsStringSync('''
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('custom app test', (WidgetTester tester) async {
+    expect(1, 1);
+  });
+}
+''');
+
+        final originalContent = widgetTestFile.readAsStringSync();
+
+        cmd.arguments = parser.parse([]);
+        await cmd.handle();
+
+        final afterInstallContent = widgetTestFile.readAsStringSync();
+        expect(afterInstallContent, equals(originalContent));
+      });
+    });
+
+    // -----------------------------------------------------------------------
     // Group 2: main.dart replacement
     // -----------------------------------------------------------------------
     group('main.dart replacement', () {

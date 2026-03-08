@@ -210,4 +210,26 @@ class InstallStubs {
   static String envExampleContent() {
     return StubLoader.load('install/env_example');
   }
+
+  /// Generates a Magic-compatible smoke test for `test/widget_test.dart`.
+  ///
+  /// The test intentionally validates only that the generated root widget can
+  /// be mounted without throwing, ensuring a stable default after install.
+  static String widgetTestContent() {
+    return '''import 'package:flutter_test/flutter_test.dart';
+import 'package:magic/magic.dart';
+
+void main() {
+  testWidgets('Magic app boots smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MagicApplication(
+        title: 'Test App',
+      ),
+    );
+
+    expect(find.byType(MagicApplication), findsOneWidget);
+  });
+}
+  ''';
+  }
 }
