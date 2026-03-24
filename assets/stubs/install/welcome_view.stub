@@ -90,7 +90,7 @@ class WelcomeView extends StatelessWidget {
                                             title: 'CLI Commands',
                                             description:
                                                 'Run `magic --help` to see all available commands.',
-                                            url: 'https://magic.fluttersdk.com/cli',
+                                            url: 'https://magic.fluttersdk.com/packages/magic-cli',
                                         ),
                                     ],
                                 ),
