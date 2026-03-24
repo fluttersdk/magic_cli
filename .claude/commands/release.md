@@ -1,0 +1,138 @@
+---
+description: Prepare a new release — bumps version, updates changelog, syncs docs, creates GitHub Release which triggers validate + publish to pub.dev.
+---
+
+## Context
+
+- Current version in pubspec.yaml: !`grep 'version:' pubspec.yaml`
+- Current branch: !`git branch --show-current`
+- Git tags: !`git tag -l | sort -V | tail -10`
+- GitHub releases: !`gh release list --limit 5`
+- Unreleased changes: !`sed -n '/## \[Unreleased\]/,/^## \[/p' CHANGELOG.md | head -40`
+- Recent commits since last tag: !`git log $(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~20)..HEAD --oneline`
+- Test status: !`flutter test 2>&1 | tail -3`
+- Analyzer status: !`dart analyze 2>&1 | tail -3`
+
+## Arguments
+
+$ARGUMENTS — The target version to release (e.g. `1.1.0`, `1.0.1`, `2.0.0-beta.1`). If empty, auto-increment the patch segment.
+
+## Your task
+
+You are preparing a new release for the **Magic CLI** Dart package. Follow this checklist precisely:
+
+### Phase 1: Validation
+
+1. **Branch check** — Must be on `master` branch. If not, STOP and warn.
+2. **Clean tree** — `git status` must show no uncommitted changes. If dirty, STOP and warn.
+3. **Tests** — All tests must pass (see context above). If failing, STOP and report.
+4. **Analyzer** — Zero issues required (see context above). If issues, STOP and report.
+5. **Version** — Determine the new version from $ARGUMENTS or auto-increment.
+
+### Phase 2: Version Bump
+
+Update the version string in ALL of these files:
+
+| File | What to update |
+|------|----------------|
+| `pubspec.yaml` | `version:` field |
+| `CHANGELOG.md` | Move `[Unreleased]` content → `[{version}] - {YYYY-MM-DD}`, add empty `[Unreleased]` above |
+| `CLAUDE.md` | `**Version:**` line (if version is hardcoded) |
+
+### Phase 3: Changelog Enhancement
+
+Review the `[Unreleased]` section and the git log since the last tag:
+
+1. **Cross-reference** — Ensure every significant commit is reflected in CHANGELOG.md
+2. **Missing entries** — Add any commits that introduced features, fixes, or improvements but were not logged
+3. **Categorize** — Use these emoji categories:
+   - `### ✨ New Features` — new commands, flags, stub templates
+   - `### 🐛 Bug Fixes` — bug fixes
+   - `### 🔧 Improvements` — DX, CI/CD, docs, refactors
+   - `### ⚠️ Breaking Changes` — only if command syntax or generated output changed
+4. **Entry format** — `- **Short Title**: One-line description`
+5. **Date** — Use today's date in `YYYY-MM-DD` format
+
+### Phase 4: README Sync
+
+Check README.md for any version-specific content that needs updating:
+
+1. Version numbers in badges or install examples
+2. Any outdated command examples that don't match current behavior
+3. New commands or flags that should be documented
+
+### Phase 5: Local Verification
+
+Run all checks locally. ALL must pass before proceeding:
+
+1. `dart format --set-exit-if-changed .` — must be clean
+2. `dart analyze --no-fatal-infos` — must be zero issues
+3. `flutter test` — must all pass
+4. `dart pub publish --dry-run` — must be zero warnings
+5. Review all changed files with `git diff`
+
+If **dry-run fails** → STOP. Fix the issue before proceeding.
+
+### Phase 6: Commit & Push
+
+1. Stage all modified files
+2. Create a single commit: `chore(release): {version}`
+3. Push to remote: `git push`
+
+### Phase 7: Create GitHub Release
+
+Create a GitHub Release using `gh` CLI. This triggers the full pipeline at once:
+
+1. **Creates the GitHub Release** with changelog notes
+2. **Creates the git tag** (e.g. `1.1.0`)
+3. **Triggers `publish.yml`** — tag push starts the `validate` job (analyze + format + test), then `publish` job (publish to pub.dev via OIDC)
+
+Determine if the version is a prerelease:
+- Contains `alpha` or `beta` or `rc` → add `--prerelease` flag
+- Otherwise → stable release, no flag
+
+Determine the previous version tag for the changelog comparison link.
+
+```bash
+gh release create {version} \
+  --target master \
+  --title "v{version}" \
+  [--prerelease] \
+  --notes "$(cat <<'NOTES'
+{changelog content from Phase 3 — same categories and entries}
+
+**Full Changelog**: https://github.com/fluttersdk/magic_cli/compare/{previous_tag}...{version}
+NOTES
+)"
+```
+
+After creating the release, watch the publish workflow:
+
+```bash
+# Wait a few seconds for the workflow to trigger
+gh run list --workflow=publish.yml --limit 1 --json databaseId,status,headSha --jq '.[0]'
+gh run watch {run_id} --exit-status
+```
+
+If publish fails → report the error. The release and tag already exist — the user can fix and re-trigger manually.
+
+### Output
+
+Present a summary:
+
+```
+## Release {version} Complete
+
+**GitHub Release:** https://github.com/fluttersdk/magic_cli/releases/tag/{version}
+
+**Changed files:**
+- pubspec.yaml
+- CHANGELOG.md
+- CLAUDE.md
+- (any others)
+
+**Changelog:** {count} features, {count} fixes, {count} improvements
+
+**Local:** ✅ Tests ({count} passed) · ✅ Analyzer (0 issues) · ✅ Format clean · ✅ Dry-run (0 warnings)
+**pub.dev:** ✅ Validate passed → Published (run #{publish_run_id}) — https://pub.dev/packages/magic_cli
+```
