@@ -12,7 +12,7 @@ body:
     attributes:
       label: Documentation Page
       description: Which section or page has the issue?
-      placeholder: "README.md command reference or https://pub.dev/packages/magic_cli"
+      placeholder: "README.md command reference or https://magic.fluttersdk.com/packages/magic-cli"
     validations:
       required: true
 

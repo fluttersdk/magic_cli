@@ -18,6 +18,7 @@
 </p>
 
 <p align="center">
+  <a href="https://magic.fluttersdk.com/packages/magic-cli">Website</a> ·
   <a href="https://pub.dev/packages/magic_cli">pub.dev</a> ·
   <a href="https://github.com/fluttersdk/magic_cli/issues">Issues</a> ·
   <a href="https://github.com/fluttersdk/magic_cli/discussions">Discussions</a>

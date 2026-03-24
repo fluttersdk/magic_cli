@@ -8,6 +8,13 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### 📝 Documentation
+
+- Update homepage URL to Magic website package page (`https://magic.fluttersdk.com/packages/magic-cli`)
+- Add "Website" link to README navigation bar
+- Update CLI Commands link in welcome view stub to point to package page
+- Update documentation issue template placeholder URL
+
 ---
 
 ## [0.0.1-alpha.3] - 2026-03-24
