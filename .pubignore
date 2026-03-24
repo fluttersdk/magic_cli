@@ -1,13 +1,26 @@
-# Environment files
-.env
+# AI Development & Documentation
+.claude/
+CLAUDE.md
+.mcp.json
 
-# Documentation (keep README.md only)
-REFACTORING_COMPLETE.md
+# IDEs
+.idea/
+.vscode/
+*.iml
 
-# Old library file (renamed to magic_cli.dart)
-lib/fluttersdk_magic_cli.dart
+# CI/CD
+.github/
 
 # Development
-.vscode/
-.idea/
-*.iml
+coverage/
+.dart_tool/packages
+.packages
+build/
+
+# Environment
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
