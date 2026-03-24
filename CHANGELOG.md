@@ -8,6 +8,10 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+---
+
+## [0.0.1-alpha.3] - 2026-03-24
+
 ### ✨ New Features
 
 - **Install Command Rewrite**: Full project scaffold with welcome page, configs, providers, routes, and `main.dart` bootstrap
@@ -26,14 +30,17 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.
 - **main.dart Bootstrap**: Correctly makes `main()` async when injecting `await Magic.init()`
 - **Command Help**: Fixed `--help` flag being blocked by global help check on namespaced commands
 - **Generated Code Quality**: All generated code now passes `dart analyze` on clean projects
+- **StubLoader Paths**: Removed hardcoded developer paths and `FLUTTER_TEST` branch that broke CI on Ubuntu
 
 ### 🔧 Improvements
 
 - **Stub Extraction**: Migrated all static Dart string constants to external `.stub` template files
 - **Code Quality**: Multi-line collections, catch comments, param docblocks, type safety fixes
-- **Integration Tests**: Full CLI flow tests for all commands
+- **Integration Tests**: Kernel dispatch and key:generate flow tests
 - **make:model Flags**: Composite generation with `-mcfsp` and `--all` flags (migration + controller + factory + seeder + policy)
 - **Barrel Export**: Updated `magic_cli.dart` with complete public API surface
+- **CI/CD**: Bumped `actions/checkout` to v6 and `codecov/codecov-action` to v5
+- **Project Infra**: Added CLAUDE.md, GitHub issue templates, dependabot config, release workflow, and `.claude/rules/`
 
 ---
 
