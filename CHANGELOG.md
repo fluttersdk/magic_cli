@@ -8,6 +8,10 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add broadcasting support to `install` command (`--without-broadcasting` flag, `config/broadcasting.dart`, Reverb connection config)
+
 ### 📝 Documentation
 
 - Update homepage URL to Magic website package page (`https://magic.fluttersdk.com/packages/magic-cli`)
