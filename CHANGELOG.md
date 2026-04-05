@@ -19,7 +19,6 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.
 
 ### 🔧 Improvements
 
-- **CI/CD**: Bump `codecov/codecov-action` from v5 to v6
 - **Documentation**: Update homepage URL to Magic website package page, add "Website" link to README, update CLI Commands link in welcome view stub
 
 ---

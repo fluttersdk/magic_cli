@@ -1,7 +1,9 @@
+import 'package:magic/magic.dart';
+
 /// Broadcasting configuration.
 ///
 /// Defines the default broadcasting connection and available connections.
-/// See: https://fluttersdk.com/docs/broadcasting
+/// See: https://magic.fluttersdk.com/docs/broadcasting
 Map<String, dynamic> get broadcastingConfig => {
   'broadcasting': {
     'default': env('BROADCAST_CONNECTION', 'null'),
