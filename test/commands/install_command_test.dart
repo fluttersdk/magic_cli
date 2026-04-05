@@ -181,7 +181,7 @@ void main() {
         );
       });
 
-      test('creates all 7 config files', () {
+      test('creates all 8 config files', () {
         final configs = [
           'app.dart',
           'auth.dart',
@@ -190,6 +190,7 @@ void main() {
           'view.dart',
           'cache.dart',
           'logging.dart',
+          'broadcasting.dart',
         ];
 
         for (final config in configs) {
@@ -251,6 +252,21 @@ void main() {
           File('${tempDir.path}/.env.example').existsSync(),
           isTrue,
           reason: '.env.example should exist',
+        );
+      });
+
+      test('includes broadcasting env vars in .env', () {
+        final content = File('${tempDir.path}/.env').readAsStringSync();
+
+        expect(
+          content,
+          contains('BROADCAST_CONNECTION'),
+          reason: '.env should contain BROADCAST_CONNECTION',
+        );
+        expect(
+          content,
+          contains('REVERB_HOST'),
+          reason: '.env should contain REVERB_HOST',
         );
       });
     });
@@ -354,7 +370,7 @@ void main() {
         );
       });
 
-      test('imports all 7 configs by default', () async {
+      test('imports all 8 configs by default', () async {
         cmd.arguments = parser.parse([]);
         await cmd.handle();
 
@@ -369,6 +385,7 @@ void main() {
           "import 'config/view.dart'",
           "import 'config/cache.dart'",
           "import 'config/logging.dart'",
+          "import 'config/broadcasting.dart'",
         ];
 
         for (final imp in expectedImports) {
@@ -689,7 +706,67 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Group 10: Combined flags (--without-auth --without-database)
+    // Group 10: --without-broadcasting flag
+    // -----------------------------------------------------------------------
+    group('--without-broadcasting flag', () {
+      setUp(() async {
+        cmd.arguments = parser.parse(['--without-broadcasting']);
+        await cmd.handle();
+      });
+
+      test('skips broadcasting.dart', () {
+        expect(
+          File('${tempDir.path}/lib/config/broadcasting.dart').existsSync(),
+          isFalse,
+          reason: 'broadcasting.dart should not be created',
+        );
+      });
+
+      test('excludes BroadcastServiceProvider from app.dart', () {
+        final content =
+            File('${tempDir.path}/lib/config/app.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains('BroadcastServiceProvider')),
+          reason: 'app.dart should not contain BroadcastServiceProvider',
+        );
+      });
+
+      test('excludes broadcasting config import from main.dart', () {
+        final content =
+            File('${tempDir.path}/lib/main.dart').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains("import 'config/broadcasting.dart'")),
+          reason: 'main.dart should not import broadcasting config',
+        );
+        expect(
+          content,
+          isNot(contains('broadcastingConfig')),
+          reason: 'main.dart should not use broadcastingConfig factory',
+        );
+      });
+
+      test('excludes broadcasting env vars from .env', () {
+        final content = File('${tempDir.path}/.env').readAsStringSync();
+
+        expect(
+          content,
+          isNot(contains('BROADCAST_CONNECTION')),
+          reason: '.env should not contain BROADCAST_CONNECTION',
+        );
+        expect(
+          content,
+          isNot(contains('REVERB_HOST')),
+          reason: '.env should not contain REVERB_HOST',
+        );
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Group 11: Combined flags (--without-auth --without-database)
     // -----------------------------------------------------------------------
     group('Combined flags (--without-auth --without-database)', () {
       setUp(() async {
@@ -713,21 +790,21 @@ void main() {
         expect(content, isNot(contains('DatabaseServiceProvider')));
       });
 
-      test('creates only 5 config files', () {
+      test('creates only 6 config files', () {
         final dir = Directory('${tempDir.path}/lib/config');
         final files = dir.listSync().whereType<File>().toList();
 
         expect(
           files.length,
-          5,
+          6,
           reason:
-              'Should create exactly 5 config files (app, network, view, cache, logging)',
+              'Should create exactly 6 config files (app, network, view, cache, logging, broadcasting)',
         );
       });
     });
 
     // -----------------------------------------------------------------------
-    // Group 11: .env content
+    // Group 12: .env content
     // -----------------------------------------------------------------------
     group('.env content', () {
       setUp(() async {
@@ -755,7 +832,7 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Group 12: Content verification
+    // Group 13: Content verification
     // -----------------------------------------------------------------------
     group('Content verification', () {
       setUp(() async {
@@ -801,7 +878,7 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Group 13: Cache config uses FileStore instance
+    // Group 14: Cache config uses FileStore instance
     // -----------------------------------------------------------------------
     group('Cache config uses FileStore instance', () {
       setUp(() async {
@@ -838,7 +915,7 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Group 14: .env registered as Flutter asset
+    // Group 15: .env registered as Flutter asset
     // -----------------------------------------------------------------------
     group('.env registered as Flutter asset', () {
       test('adds .env to flutter assets in pubspec.yaml', () async {
@@ -900,7 +977,7 @@ flutter:
     });
 
     // -----------------------------------------------------------------------
-    // Group 15: Web support (sqlite3.wasm)
+    // Group 16: Web support (sqlite3.wasm)
     // -----------------------------------------------------------------------
     group('Web support (sqlite3.wasm)', () {
       late _TestInstallCommandWithDownload downloadCmd;

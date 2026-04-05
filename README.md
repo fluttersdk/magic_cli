@@ -138,6 +138,7 @@ magic install --without-database --without-auth
 | `--without-events` | Skip events setup |
 | `--without-localization` | Skip localization setup |
 | `--without-logging` | Skip logging setup |
+| `--without-broadcasting` | Skip broadcasting setup |
 
 <details>
 <summary><strong>Generated Structure</strong></summary>
@@ -147,6 +148,7 @@ lib/
 ├── config/
 │   ├── app.dart
 │   ├── auth.dart
+│   ├── broadcasting.dart
 │   ├── cache.dart
 │   ├── database.dart
 │   ├── logging.dart

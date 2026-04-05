@@ -34,14 +34,11 @@ class InstallStubs {
     final imports = configImports.join('\n');
     final factories = configFactories.map((f) => '      $f,').join('\n');
 
-    return StubLoader.replace(
-      StubLoader.load('install/main'),
-      {
-        'configImports': imports,
-        'configFactories': factories,
-        'appName': appName,
-      },
-    );
+    return StubLoader.replace(StubLoader.load('install/main'), {
+      'configImports': imports,
+      'configFactories': factories,
+      'appName': appName,
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -80,13 +77,10 @@ class InstallStubs {
       ...authProviderEntries.map((e) => '      $e'),
     ].join('\n');
 
-    return StubLoader.replace(
-      StubLoader.load('install/app_config'),
-      {
-        'allImports': allImports,
-        'allProviders': allProviders,
-      },
-    );
+    return StubLoader.replace(StubLoader.load('install/app_config'), {
+      'allImports': allImports,
+      'allProviders': allProviders,
+    });
   }
 
   /// Generates `lib/config/auth.dart` matching the Uptizm production pattern.
@@ -122,6 +116,11 @@ class InstallStubs {
   /// Generates `lib/config/logging.dart` with stack -> console channel setup.
   static String loggingConfigContent() {
     return StubLoader.load('install/logging_config');
+  }
+
+  /// Generates `lib/config/broadcasting.dart` with Reverb and null connections.
+  static String broadcastingConfigContent() {
+    return StubLoader.load('install/broadcasting_config');
   }
 
   // ---------------------------------------------------------------------------
@@ -180,12 +179,9 @@ class InstallStubs {
   ///
   /// [appName] — the human-readable application name shown in the hero section.
   static String welcomeViewContent({required String appName}) {
-    return StubLoader.replace(
-      StubLoader.load('install/welcome_view'),
-      {
-        'appName': appName,
-      },
-    );
+    return StubLoader.replace(StubLoader.load('install/welcome_view'), {
+      'appName': appName,
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -195,20 +191,44 @@ class InstallStubs {
   /// Generates a `.env` template file with sensible defaults.
   ///
   /// [appName] — written as the default value for `APP_NAME`.
-  static String envContent({required String appName}) {
-    return StubLoader.replace(
-      StubLoader.load('install/env'),
-      {
-        'appName': appName,
-      },
-    );
+  /// [withoutBroadcasting] — when `true`, omits the `BROADCAST_CONNECTION`
+  ///   and `REVERB_*` environment variables.
+  static String envContent({
+    required String appName,
+    bool withoutBroadcasting = false,
+  }) {
+    var content = StubLoader.replace(StubLoader.load('install/env'), {
+      'appName': appName,
+    });
+
+    if (!withoutBroadcasting) {
+      content += '\nBROADCAST_CONNECTION=null\n'
+          'REVERB_HOST=localhost\n'
+          'REVERB_PORT=8080\n'
+          'REVERB_SCHEME=ws\n'
+          'REVERB_APP_KEY=\n';
+    }
+
+    return content;
   }
 
   /// Generates a `.env.example` template file with empty values.
   ///
   /// Safe to commit — contains keys but no secrets.
-  static String envExampleContent() {
-    return StubLoader.load('install/env_example');
+  /// [withoutBroadcasting] — when `true`, omits the `BROADCAST_CONNECTION`
+  ///   and `REVERB_*` environment variable keys.
+  static String envExampleContent({bool withoutBroadcasting = false}) {
+    var content = StubLoader.load('install/env_example');
+
+    if (!withoutBroadcasting) {
+      content += '\nBROADCAST_CONNECTION=\n'
+          'REVERB_HOST=\n'
+          'REVERB_PORT=\n'
+          'REVERB_SCHEME=\n'
+          'REVERB_APP_KEY=\n';
+    }
+
+    return content;
   }
 
   /// Generates a Magic-compatible smoke test for `test/widget_test.dart`.

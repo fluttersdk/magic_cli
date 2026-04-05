@@ -32,6 +32,7 @@ import '../stubs/install_stubs.dart';
 /// | `--without-events` | Skip events setup |
 /// | `--without-localization` | Skip `assets/lang/` directory |
 /// | `--without-logging` | Skip `config/logging.dart` |
+/// | `--without-broadcasting` | Skip broadcasting setup |
 class InstallCommand extends Command {
   @override
   String get name => 'install';
@@ -48,11 +49,7 @@ class InstallCommand extends Command {
 
   @override
   void configure(ArgParser parser) {
-    parser.addFlag(
-      'without-auth',
-      help: 'Skip auth setup',
-      negatable: false,
-    );
+    parser.addFlag('without-auth', help: 'Skip auth setup', negatable: false);
     parser.addFlag(
       'without-database',
       help: 'Skip database setup',
@@ -63,11 +60,7 @@ class InstallCommand extends Command {
       help: 'Skip network setup',
       negatable: false,
     );
-    parser.addFlag(
-      'without-cache',
-      help: 'Skip cache setup',
-      negatable: false,
-    );
+    parser.addFlag('without-cache', help: 'Skip cache setup', negatable: false);
     parser.addFlag(
       'without-events',
       help: 'Skip events setup',
@@ -83,6 +76,11 @@ class InstallCommand extends Command {
       help: 'Skip logging setup',
       negatable: false,
     );
+    parser.addFlag(
+      'without-broadcasting',
+      help: 'Skip broadcasting setup',
+      negatable: false,
+    );
   }
 
   @override
@@ -96,6 +94,7 @@ class InstallCommand extends Command {
     final withoutEvents = arguments['without-events'] as bool;
     final withoutLocalization = arguments['without-localization'] as bool;
     final withoutLogging = arguments['without-logging'] as bool;
+    final withoutBroadcasting = arguments['without-broadcasting'] as bool;
 
     _createDirectories(
       root,
@@ -112,6 +111,7 @@ class InstallCommand extends Command {
       withoutCache: withoutCache,
       withoutLogging: withoutLogging,
       withoutLocalization: withoutLocalization,
+      withoutBroadcasting: withoutBroadcasting,
     );
 
     _createStarterFiles(root);
@@ -123,10 +123,11 @@ class InstallCommand extends Command {
       withoutNetwork: withoutNetwork,
       withoutCache: withoutCache,
       withoutLogging: withoutLogging,
+      withoutBroadcasting: withoutBroadcasting,
     );
 
     _patchDefaultWidgetTest(root);
-    _createEnvFiles(root);
+    _createEnvFiles(root, withoutBroadcasting: withoutBroadcasting);
 
     _registerEnvAsset(root);
 
@@ -167,10 +168,7 @@ class InstallCommand extends Command {
     ];
 
     if (!withoutEvents) {
-      appDirs.addAll([
-        'lib/app/listeners',
-        'lib/app/events',
-      ]);
+      appDirs.addAll(['lib/app/listeners', 'lib/app/events']);
     }
 
     for (final dir in appDirs) {
@@ -209,6 +207,7 @@ class InstallCommand extends Command {
     required bool withoutCache,
     required bool withoutLogging,
     required bool withoutLocalization,
+    required bool withoutBroadcasting,
   }) {
     final providerImports = <String>[];
     final providerEntries = <String>[];
@@ -238,6 +237,9 @@ class InstallCommand extends Command {
     }
     if (!withoutAuth) {
       providerEntries.add('(app) => VaultServiceProvider(app),');
+    }
+    if (!withoutBroadcasting) {
+      providerEntries.add('(app) => BroadcastServiceProvider(app),');
     }
 
     // Auth providers boot AFTER AppServiceProvider (which registers
@@ -291,6 +293,12 @@ class InstallCommand extends Command {
         InstallStubs.loggingConfigContent(),
       );
     }
+    if (!withoutBroadcasting) {
+      _writeIfNotExists(
+        path.join(root, 'lib/config/broadcasting.dart'),
+        InstallStubs.broadcastingConfigContent(),
+      );
+    }
   }
 
   /// Writes the framework starter files that are always created:
@@ -342,6 +350,7 @@ class InstallCommand extends Command {
     required bool withoutNetwork,
     required bool withoutCache,
     required bool withoutLogging,
+    required bool withoutBroadcasting,
   }) {
     final mainPath = path.join(root, 'lib/main.dart');
 
@@ -358,10 +367,7 @@ class InstallCommand extends Command {
       "import 'config/view.dart';",
     ];
 
-    final configFactories = <String>[
-      '() => appConfig',
-      '() => viewConfig',
-    ];
+    final configFactories = <String>['() => appConfig', '() => viewConfig'];
 
     if (!withoutAuth) {
       configImports.add("import 'config/auth.dart';");
@@ -382,6 +388,10 @@ class InstallCommand extends Command {
     if (!withoutLogging) {
       configImports.add("import 'config/logging.dart';");
       configFactories.add('() => loggingConfig');
+    }
+    if (!withoutBroadcasting) {
+      configImports.add("import 'config/broadcasting.dart';");
+      configFactories.add('() => broadcastingConfig');
     }
 
     final appName = _getAppName(root);
@@ -420,26 +430,29 @@ class InstallCommand extends Command {
       return;
     }
 
-    FileHelper.writeFile(
-      widgetTestPath,
-      InstallStubs.widgetTestContent(),
-    );
+    FileHelper.writeFile(widgetTestPath, InstallStubs.widgetTestContent());
   }
 
   /// Writes `.env` and `.env.example` to [root] if they do not already exist.
   ///
   /// [root] — absolute path to the Flutter project root.
-  void _createEnvFiles(String root) {
+  /// [withoutBroadcasting] — when `true`, omits broadcasting env vars.
+  void _createEnvFiles(String root, {required bool withoutBroadcasting}) {
     final appName = _getAppName(root);
 
     _writeIfNotExists(
       path.join(root, '.env'),
-      InstallStubs.envContent(appName: appName),
+      InstallStubs.envContent(
+        appName: appName,
+        withoutBroadcasting: withoutBroadcasting,
+      ),
     );
 
     _writeIfNotExists(
       path.join(root, '.env.example'),
-      InstallStubs.envExampleContent(),
+      InstallStubs.envExampleContent(
+        withoutBroadcasting: withoutBroadcasting,
+      ),
     );
   }
 

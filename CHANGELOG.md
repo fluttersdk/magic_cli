@@ -8,12 +8,18 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-### 📝 Documentation
+---
 
-- Update homepage URL to Magic website package page (`https://magic.fluttersdk.com/packages/magic-cli`)
-- Add "Website" link to README navigation bar
-- Update CLI Commands link in welcome view stub to point to package page
-- Update documentation issue template placeholder URL
+## [0.0.1-alpha.4] - 2026-04-06
+
+### ✨ New Features
+
+- **Broadcasting Support**: Add `--without-broadcasting` flag to `install` command with `config/broadcasting.dart` stub and Reverb connection config
+- **Conditional Env Vars**: Broadcasting env vars (`BROADCAST_CONNECTION`, `REVERB_*`) only generated when broadcasting is enabled
+
+### 🔧 Improvements
+
+- **Documentation**: Update homepage URL to Magic website package page, add "Website" link to README, update CLI Commands link in welcome view stub
 
 ---
 
