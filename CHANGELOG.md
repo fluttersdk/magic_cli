@@ -10,6 +10,14 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.
 
 ---
 
+## [0.0.1-alpha.6] - 2026-04-07
+
+### 🔧 Improvements
+
+- **Route Page Titles**: Add `.title('Welcome')` to generated welcome route for browser tab titles
+
+---
+
 ## [0.0.1-alpha.5] - 2026-04-07
 
 ### ✨ New Features
