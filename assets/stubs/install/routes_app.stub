@@ -9,5 +9,5 @@ import '../resources/views/welcome_view.dart';
 ///
 /// See also: `lib/app/kernel.dart` for middleware registration.
 void registerAppRoutes() {
-  MagicRoute.page('/', () => const WelcomeView());
+  MagicRoute.page('/', () => const WelcomeView()).title('Welcome');
 }
