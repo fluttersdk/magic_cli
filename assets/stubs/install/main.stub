@@ -12,6 +12,6 @@ void main() async {
   );
 
   runApp(
-    MagicApplication(title: '{{ appName }}', titleSuffix: '{{ appName }}'),
+    MagicApplication(title: '{{ appName }}'),
   );
 }
