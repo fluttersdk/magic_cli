@@ -263,6 +263,11 @@ class InstallCommand extends Command {
       InstallStubs.viewConfigContent(),
     );
 
+    _writeIfNotExists(
+      path.join(root, 'lib/config/routing.dart'),
+      InstallStubs.routingConfigContent(),
+    );
+
     if (!withoutAuth) {
       _writeIfNotExists(
         path.join(root, 'lib/config/auth.dart'),
@@ -364,10 +369,15 @@ class InstallCommand extends Command {
 
     final configImports = <String>[
       "import 'config/app.dart';",
+      "import 'config/routing.dart';",
       "import 'config/view.dart';",
     ];
 
-    final configFactories = <String>['() => appConfig', '() => viewConfig'];
+    final configFactories = <String>[
+      '() => appConfig',
+      '() => routingConfig',
+      '() => viewConfig',
+    ];
 
     if (!withoutAuth) {
       configImports.add("import 'config/auth.dart';");

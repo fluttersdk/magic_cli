@@ -181,12 +181,13 @@ void main() {
         );
       });
 
-      test('creates all 8 config files', () {
+      test('creates all 9 config files', () {
         final configs = [
           'app.dart',
           'auth.dart',
           'database.dart',
           'network.dart',
+          'routing.dart',
           'view.dart',
           'cache.dart',
           'logging.dart',
@@ -370,7 +371,7 @@ void main() {
         );
       });
 
-      test('imports all 8 configs by default', () async {
+      test('imports all 9 configs by default', () async {
         cmd.arguments = parser.parse([]);
         await cmd.handle();
 
@@ -382,6 +383,7 @@ void main() {
           "import 'config/auth.dart'",
           "import 'config/database.dart'",
           "import 'config/network.dart'",
+          "import 'config/routing.dart'",
           "import 'config/view.dart'",
           "import 'config/cache.dart'",
           "import 'config/logging.dart'",
@@ -790,15 +792,15 @@ void main() {
         expect(content, isNot(contains('DatabaseServiceProvider')));
       });
 
-      test('creates only 6 config files', () {
+      test('creates only 7 config files', () {
         final dir = Directory('${tempDir.path}/lib/config');
         final files = dir.listSync().whereType<File>().toList();
 
         expect(
           files.length,
-          6,
+          7,
           reason:
-              'Should create exactly 6 config files (app, network, view, cache, logging, broadcasting)',
+              'Should create exactly 7 config files (app, network, routing, view, cache, logging, broadcasting)',
         );
       });
     });

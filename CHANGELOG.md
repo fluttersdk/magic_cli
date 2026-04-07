@@ -8,6 +8,10 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### ✨ New Features
+
+- **Routing Config**: Generate `config/routing.dart` with URL strategy setting during `magic install` — enables clean web URLs via `url_strategy: 'path'`
+
 ---
 
 ## [0.0.1-alpha.4] - 2026-04-06
