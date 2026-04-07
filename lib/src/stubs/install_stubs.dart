@@ -123,6 +123,14 @@ class InstallStubs {
     return StubLoader.load('install/broadcasting_config');
   }
 
+  /// Generates `lib/config/routing.dart` with URL strategy config.
+  ///
+  /// Default `url_strategy: null` preserves hash-based URLs.
+  /// Set to `'path'` for clean web URLs (`/dashboard` instead of `/#/dashboard`).
+  static String routingConfigContent() {
+    return StubLoader.load('install/routing_config');
+  }
+
   // ---------------------------------------------------------------------------
   // Service Providers
   // ---------------------------------------------------------------------------

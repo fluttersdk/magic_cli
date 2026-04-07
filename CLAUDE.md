@@ -31,7 +31,7 @@ lib/src/
 │   └── install_stubs.dart            # Install-specific stub utilities
 └── helpers/                          # Static utilities: file I/O, YAML, console styling, config editing
 
-assets/stubs/                         # .stub templates (14 generator + 30 install stubs)
+assets/stubs/                         # .stub templates (17 generator + 19 install stubs)
 ```
 
 **Lifecycle**: `bin/magic.dart` → `Kernel.handle(args)` → lookup command by `args[0]` → `command.configure(parser)` → parse args → `command.handle()`
